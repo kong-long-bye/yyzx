@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>东软颐养中心数据库表结构浏览器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            background: white;
+            margin: 10px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        /* 左侧表列表 */
+        .table-list {
+            width: 300px;
+            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            overflow-y: auto;
+        }
+
+        .list-header {
+            padding: 25px 20px;
+            background-color: #2c3e50;
+            border-bottom: 1px solid #34495e;
+        }
+
+        .list-header h2 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .list-header p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .table-items {
+            padding: 0;
+        }
+
+        .table-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #34495e;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .table-item:hover {
+            background-color: #34495e;
+            padding-left: 25px;
+        }
+
+        .table-item.active {
+            background-color: #e74c3c;
+            border-left: 4px solid #c0392b;
+        }
+
+        .table-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .table-code {
+            font-size: 12px;
+            opacity: 0.7;
+            font-family: 'Courier New', monospace;
+        }
+
+        .table-desc {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 4px;
+            line-height: 1.3;
+        }
+
+        /* 右侧详情区域 */
+        .table-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+        }
+
+        .details-header {
+            background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 25px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .details-title {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .details-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .details-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #7f8c8d;
+        }
+
+        .welcome-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .welcome-text {
+            font-size: 18px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        /* 详情内容区域 */
+        .detail-section {
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: #34495e;
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-icon {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .section-content {
+            padding: 20px;
+        }
+
+        /* 表结构样式 */
+        .structure-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .structure-table th,
+        .structure-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .structure-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .structure-table td {
+            font-size: 13px;
+        }
+
+        .structure-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .field-name {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: #e74c3c;
+        }
+
+        .field-type {
+            font-family: 'Courier New', monospace;
+            color: #3498db;
+            font-weight: 500;
+        }
+
+        .primary-key {
+            background: #fee;
+            color: #e74c3c;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .foreign-key {
+            background: #e8f5e8;
+            color: #27ae60;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        /* 功能说明样式 */
+        .function-desc {
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .function-list {
+            list-style: none;
+            margin-top: 15px;
+        }
+
+        .function-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #ecf0f1;
+            display: flex;
+            align-items: center;
+        }
+
+        .function-item:last-child {
+            border-bottom: none;
+        }
+
+        .function-icon {
+            width: 20px;
+            height: 20px;
+            background: #3498db;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-size: 10px;
+        }
+
+        /* 数据示例样式 */
+        .sample-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .sample-table th,
+        .sample-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border: 1px solid #dee2e6;
+        }
+
+        .sample-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .sample-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        /* 相关表样式 */
+        .related-tables {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .related-table {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .related-table:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+
+        .relation-type {
+            font-size: 10px;
+            opacity: 0.8;
+            margin-left: 5px;
+        }
+
+        /* 统计信息样式 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            opacity: 0.9;
+        }
+
+        /* 滚动条样式 */
+        .table-list::-webkit-scrollbar,
+        .details-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .table-list::-webkit-scrollbar-track {
+            background: #34495e;
+        }
+
+        .table-list::-webkit-scrollbar-thumb {
+            background: #7f8c8d;
+            border-radius: 3px;
+        }
+
+        .details-content::-webkit-scrollbar-track {
+            background: #ecf0f1;
+        }
+
+        .details-content::-webkit-scrollbar-thumb {
+            background: #bdc3c7;
+            border-radius: 3px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                margin: 5px;
+            }
+            
+            .table-list {
+                width: 100%;
+                height: 200px;
+            }
+            
+            .details-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧表列表 -->
+        <div class="table-list">
+            <div class="list-header">
+                <h2>🗄️ 数据库表</h2>
+                <p>共 15 个表 • 点击查看详情</p>
+            </div>
+            <div class="table-items" id="tableItems">
+                <!-- 表项将通过JavaScript动态生成 -->
+            </div>
+        </div>
+
+        <!-- 右侧详情区域 -->
+        <div class="table-details">
+            <div class="details-header">
+                <div class="details-title" id="detailsTitle">东软颐养中心数据库</div>
+                <div class="details-subtitle" id="detailsSubtitle">选择左侧表名查看详细信息</div>
+            </div>
+            <div class="details-content" id="detailsContent">
+                <div class="welcome-screen">
+                    <div class="welcome-icon">🗃️</div>
+                    <div class="welcome-text">
+                        <strong>欢迎使用数据库表结构浏览器</strong><br>
+                        点击左侧表名查看详细的表结构、功能说明和数据示例
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 数据库表定义
+        const databaseTables = {
+            roles: {
+                name: '角色表',
+                code: 'roles',
+                description: '系统角色权限管理，定义不同用户的角色类型和权限级别',
+                category: '系统管理',
+                columns: [
+                    { name: 'id', type: 'INT', isPrimary: true, comment: '主键ID，自增长' },
+                    { name: 'role_name', type: 'VARCHAR(50)', comment: '角色名称，如：系统管理员、健康管家' },
+                    { name: 'role_code', type: 'VARCHAR(20)', comment: '角色编码，用于程序判断，如：ADMIN、CAREGIVER' },
+                    { name: 'description', type: 'TEXT', comment: '角色描述，详细说明角色职责' },
+                    { name: 'status', type: 'TINYINT', comment: '角色状态：1-启用，0-禁用' },
+                    { name: 'created_at', type: 'TIMESTAMP', comment: '创建时间' },
+                    { name: 'updated_at', type: 'TIMESTAMP', comment: '更新时间' }
+                ],
+                functions: [
+                    '定义系统中的角色类型',
+                    '控制用户权限级别',
+                    '支持角色的启用/禁用管理',
+                    '为用户分配提供角色选项'
+                ],
+                sampleData: [
+                    { id: 1, role_name: '系统管理员', role_code: 'ADMIN', description: '系统最高权限管理员', status: '启用', created_at: '2024-01-01' },
+                    { id: 2, role_name: '健康管家', role_code: 'CAREGIVER', description: '护理人员，负责客户日常护理', status: '启用', created_at: '2024-01-01' },
+                    { id: 3, role_name: '医护人员', role_code: 'NURSE', description: '专业医护人员，负责医疗护理', status: '启用', created_at: '2024-01-01' }
+                ],
+                relatedTables: [
+                    { name: 'users', relation: '1:N', description: '一个角色可以有多个用户' },
+                    { name: 'role_menu_relations', relation: '1:N', description: '一个角色可以关联多个菜单权限' }
+                ],
+                stats: { fields: 7, records: 3, relations: 2 }
+            },
+            menus: {
+                name: '菜单表',
+                code: 'menus',
+                description: '系统菜单权限管理，定义系统功能菜单结构和访问权限',
+                category: '系统管理',
+                columns: [
+                    { name: 'id', type: 'INT', isPrimary: true, comment: '主键ID，自增长' },
+                    { name: 'menu_name', type: 'VARCHAR(50)', comment: '菜单名称，如：用户管理、床位管理' },
+                    { name: 'menu_code', type: 'VARCHAR(20)', comment: '菜单编号，程序中的唯一标识' },
+                    { name: 'menu_path', type: 'VARCHAR(100)', comment: '菜单路径，前端路由地址' },
+                    { name: 'menu_level', type: 'INT', comment: '菜单层级：1-一级菜单，2-二级菜单' },
+                    { name: 'parent_id', type: 'INT', comment: '父菜单ID，0表示一级菜单' },
+                    { name: 'icon', type: 'VARCHAR(50)', comment: '菜单图标' },
+                    { name: 'sort_order', type: 'INT', comment: '排序顺序' },
+                    { name: 'status', type: 'TINYINT', comment: '菜单状态：1-启用，0-禁用' }
+                ],
+                functions: [
+                    '定义系统功能菜单结构',
+                    '支持多级菜单嵌套',
+                    '控制菜单的显示顺序',
+                    '管理菜单的启用状态'
+                ],
+                sampleData: [
+                    { id: 1, menu_name: '系统管理', menu_code: 'SYSTEM', menu_path: '/system', menu_level: 1, parent_id: 0, sort_order: 1 },
+                    { id: 2, menu_name: '用户管理', menu_code: 'USER_MANAGE', menu_path: '/system/users', menu_level: 2, parent_id: 1, sort_order: 1 },
+                    { id: 3, menu_name: '床位管理', menu_code: 'BED_MANAGE', menu_path: '/bed', menu_level: 1, parent_id: 0, sort_order: 2 }
+                ],
+                relatedTables: [
+                    { name: 'role_menu_relations', relation: '1:N', description: '一个菜单可以分配给多个角色' }
+                ],
+                stats: { fields: 9, records: 18, relations: 1 }
+            },
+            users: {
+                name: '用户表',
+                code: 'users',
+                description: '系统用户账号管理，存储所有系统使用者的基本信息和登录凭据',
+                category: '用户管理',
+                columns: [
+                    { name: 'id', type: 'INT', isPrimary: true, comment: '主键ID，自增长' },
+                    { name: 'username', type: 'VARCHAR(50)', comment: '登录用户名，系统中唯一' },
+                    { name: 'password', type: 'VARCHAR(255)', comment: '登录密码，MD5加密存储' },
+                    { name: 'real_name', type: 'VARCHAR(50)', comment: '真实姓名' },
+                    { name: 'phone', type: 'VARCHAR(15)', comment: '联系电话' },
+                    { name: 'email', type: 'VARCHAR(100)', comment: '邮箱地址' },
+                    { name: 'role_id', type: 'INT', isForeign: true, comment: '角色ID，关联roles表' },
+                    { name: 'status', type: 'TINYINT', comment: '用户状态：1-正常，0-禁用' },
+                    { name: 'last_login_time', type: 'TIMESTAMP', comment: '最后登录时间' }
+                ],
+                functions: [
+                    '管理系统用户账号',
+                    '用户身份认证和授权',
+                    '记录用户登录状态',
+                    '关联用户角色权限'
+                ],
+                sampleData: [
+                    { id: 1, username: 'admin', real_name: '系统管理员', phone: '13800138000', email: 'admin@nursing.com', role_id: 1, status: '正常' },
+                    { id: 2, username: 'zhang_nurse', real_name: '张护士', phone: '13800138001', email: 'zhang@nursing.com', role_id: 2, status: '正常' },
+                    { id: 3, username: 'li_caregiver', real_name: '李护工', phone: '13800138002', email: 'li@nursing.com', role_id: 2, status: '正常' }
+                ],
+                relatedTables: [
+                    { name: 'roles', relation: 'N:1', description: '多个用户属于一个角色' },
+                    { name: 'nursing_projects', relation: '1:N', description: '一个用户可以负责多个护理项目' },
+                    { name: 'nursing_records', relation: '1:N', description: '一个用户可以执行多个护理记录' },
+                    { name: 'customer_caregiver_assignments', relation: '1:N', description: '一个护理人员可以照顾多个客户' }
+                ],
+                stats: { fields: 9, records: 6, relations: 4 }
+            },
+            rooms: {
+                name: '房间表',
+                code: 'rooms',
+                description: '房间基础信息管理，记录颐养中心所有房间的基本信息和配置',
+                category: '设施管理',
+                columns: [
+                    { name: 'id', type: 'INT', isPrimary: true, comment: '主键ID，自增长' },
+                    { name: 'room_number', type: 'VARCHAR(20)', comment: '房间号，如：A101、B202' },
+                    { name: 'floor_number', type: 'INT', comment: '楼层号' },
+                    { name: 'room_type', type: 'VARCHAR(20)', comment: '房间类型：单人间、双人间、三人间' },
+                    { name: 'max_beds', type: 'INT', comment: '最大床位数' },
+                    { name: 'description', type: 'TEXT', comment: '房间描述，设施说明' },
+                    { name: 'status', type: 'TINYINT', comment: '房间状态：1-正常，0-停用' }
+                ],
+                functions: [
+                    '管理房间基础信息',
+                    '定义房间类型和容量',
+                    '支持按楼层分类管理',
+                    '控制房间的使用状态'
+                ],
+                sampleData: [
+                    { id: 1, room_number: 'A101', floor_number: 1, room_type: '双人间', max_beds: 2, description: '一楼普通双人间，朝南，采光好' },
+                    { id: 2, room_number: 'A102', floor_number: 1, room_type: '双人间', max_beds: 2, description: '一楼普通双人间，朝南' },
+                    { id: 3, room_number: 'A103', floor_number: 1, room_type: '单人间', max_beds: 1, description: '一楼单人间，适合特殊护理' }
+                ],
+                relatedTables: [
+                    { name: 'beds', relation: '1:N', description: '一个房间包含多个床位' }
+                ],
+                stats: { fields: 7, records: 10, relations: 1 }
+            },
+            beds: {
+                name: '床位表',
+                code: 'beds',
+                description: '床位详细信息管理，记录每个床位的状态、类型和费用信息',
+                category: '设施管理',
+                columns: [
+                    { name: 'id', type: 'INT', isPrimary: true, comment: '主键ID，自增长' },
+                    { name: 'bed_number', type: 'VARCHAR(20)', comment: '床位编号，如：A101-1、A101-2' },
+                    { name: 'room_id', type: 'INT', isForeign: true, comment: '房间ID，关联rooms表' },
+                    { name: 'bed_type', type: 'VARCHAR(20)', comment: '床位类型：普通床、电动床、护理床' },
+                    { name: 'status', type: 'ENUM', comment: '床位状态：空闲、占用、维修、预留' },
+                    { name: 'daily_price', type: 'DECIMAL(10,2)', comment: '日费用，单位：元' },
+                    { name: 'description', type: 'TEXT', comment: '床位描述，位置说明' }
+                ],
+                functions: [
+                    '管理床位状态和分配',
+                    '设置床位类型和价格',
+                    '支持床位维修管理',
+                    '提供床位预留功能'
+                ],
+                sampleData: [
+                    { id: 1, bed_number: 'A101-1', room_id: 1, bed_type: '普通床', status: '占用', daily_price: 150.00, description: '靠窗床位' },
+                    { id: 2, bed_number: 'A101-2', room_id: 1, bed_type: '普通床', status: '空闲', daily_price: 150.00, description: '靠门床位' },
+                    { id: 3, bed_number: 'A102-1', room_id: 2, bed_type: '普通床', status: '占用', daily_price: 150.00, description: '靠窗床位' }
+                ],
+                relatedTables: [
+                    { name: 'rooms', relation: 'N:1', description: '多个床位属于一个房间' },
+                    { name: 'customers', relation: '1:1', description: '一个床位对应一个客户（如果已占用）' }
+                ],
+                stats: { fields: 7, records: 20, relations: 2 }
+            },
+            customers: {
+                name: '客户表',
+                code: 'customers',
+                description: '客户基础信息管理，存储所有入住客户的详细个人信息和健康状况',
+                category: '客户管理',
+                columns: [
+                    { name: 'id', type: 'INT', isPrimary: true, comment: '主键ID，自增长' },
+                    { name: 'name', type: 'VARCHAR(50)', comment: '客户姓名' },
+                    { name: 'id_card', type: 'VARCHAR(18)', comment: '身份证号，唯一标识' },
+                    { name: 'gender', type: 'ENUM', comment: '性别：男、女' },
+                    { name: 'birth_date', type: 'DATE', comment: '出生日期' },
+                    { name: 'phone', type: 'VARCHAR(15)', comment: '联系电话' },
+                    { name: 'emergency_contact', type: 'VARCHAR(50)', comment: '紧急联系人姓名' },
+                    { name: 'emergency_phone', type: 'VARCHAR(15)', comment: '紧急联系人电话' },
+                    { name: 'address', type: 'TEXT', comment: '家庭住址' },
+                    { name: 'medical_history', type: 'TEXT', comment: '病史记录' },
+                    { name: 'allergies', type: 'TEXT', comment: '过敏史' },
+                    { name: 'bed_id', type: 'INT', isForeign: true, comment: '床位ID，关联beds表' },
+                    { name: 'admission_date', type: 'DATE', comment: '入住日期' },
+                    { name: 'audit_status', type: 'ENUM', comment: '审核状态：待审核、已通过、已拒绝' },
+                    { name: 'status', type: 'TINYINT', comment: '客户状态：1-在住，0-已退住' }
+                ],
+                functions: [
+                    '管理客户基本信息',
+                    '记录健康和医疗信息',
+                    '处理入住申请审核',
+                    '关联床位分配信息'
+                ],
+                sampleData: [
+                    { id: 1, name: '张三', id_card: '110101195001011234', gender: '男', birth_date: '1950-01-01', phone: '13901234567', emergency_contact: '张小明', medical_history: '高血压、糖尿病', bed_id: 1, audit_status: '已通过' },
+                    { id: 2, name: '李四', id_card: '110101194005051234', gender: '女', birth_date: '1940-05-05', phone: '13902234567', emergency_contact: '李小红', medical_history: '冠心病、关节炎', bed_id: 3, audit_status: '已通过' }
+                ],
+                relatedTables: [
+                    { name: 'beds', relation: 'N:1', description: '多个客户可能使用同一床位（不同时间）' },
+                    { name: 'nursing_agreements', relation: '1:N', description: '一个客户可以有多个护理协议' },
+                    { name: 'nursing_records', relation: '1:N', description: '一个客户有多个护理记录' },
+                    { name: 'meal_diaries', relation: '1:N', description: '一个客户有多个膳食记录' },
+                    { name: 'outing_records', relation: '1:N', description: '一个客户有多个外出记录' },
+                    { name: 'customer_caregiver_assignments', relation: '1:N', description: '一个客户可以分配给多个护理人员' }
+                ],
+                stats: { fields: 15, records: 8, relations: 6 }
+            },
+            nursing_agreements: {
+                name: '护理协议表',
+                code: 'nursing_agreements',
+                description: '客户护理协议管理，定义不同护理等级的服务内容和费用标准',
+                category: '护理管理',
+                columns: [
+                    { name: 'id', type: 'INT', isPrimary: true, comment: '主键ID，自增长' },
+                    { name: 'customer_id', type: 'INT', isForeign: true, comment: '客户ID，关联customers表' },
+                    { name: 'level_name', type: 'VARCHAR(50)', comment: '护理等级名称，如：一级护理、二级护理' },
+                    { name: 'level_code', type: 'VARCHAR(20)', comment: '护理等级编码，如：L001、L002' },
+                    { name: 'level_status', type: 'ENUM', comment: '等级状态：生效、暂停、终止' },
+                    { name: 'monthly_fee', type: 'DECIMAL(10,2)', comment: '月费用，单位：元' },
+                    { name: 'service_content', type: 'TEXT', comment: '服务内容详细描述' },
+                    { name: 'start_date', type: 'DATE', comment: '协议开始日期' },
+                    { name: 'end_date', type: 'DATE', comment: '协议结束日期' }
+                ],
+                functions: [
+                    '定义护理服务等级',
+                    '管理护理费用标准',
+                    '控制协议生效状态',
+                    '记录服务内容详情'
+                ],
+                sampleData: [
+                    { id: 1, customer_id: 1, level_name: '二级护理', level_code: 'L002', level_status: '生效', monthly_fee: 5000.00, service_content: '日常护理、健康监测、生活协助', start_date: '2024-01-15' },
+                    { id: 2, customer_id: 2, level_name: '一级护理', level_code: 'L001', level_status: '生效', monthly_fee: 8000.00, service_content: '24小时专业护理、医疗监护、生活照料', start_date: '2024-02-20' }
+                ],
+                relatedTables: [
+                    { name: 'customers', relation: 'N:1', description: '多个护理协议属于一个客户' }
+                ],
+                stats: { fields: 9, records: 7, relations: 1 }
+            },
+            nursing_projects: {
+                name: '护理项目表',
+                code: 'nursing_projects',
+                description: '护理项目定义管理，标准化护理服务项目和执行规范',
+                category: '护理管理',
+                columns: [
+                    { name: 'id', type: 'INT', isPrimary: true, comment: '主键ID，自增长' },
+                    { name: 'project_name', type: 'VARCHAR(100)', comment: '项目名称，如：生命体征监测、协助用餐' },
+                    { name: 'project_category', type: 'VARCHAR(50)', comment: '项目分类：健康监护、生活照料、功能训练等' },
+                    { name: 'description', type: 'TEXT', comment: '项目详细描述和执行要求' },
+                    { name: 'standard_duration', type: 'INT', comment: '标准执行时长，单位：分钟' },
+                    { name: 'caregiver_id', type: 'INT', isForeign: true, comment: '负责护理人员ID' },
+                    { name: 'frequency', type: 'VARCHAR(20)', comment: '执行频率，如：每日3次、每2小时1次' },
+                    { name: 'status', type: 'TINYINT', comment: '项目状态：1-启用，0-停用' }
+                ],
+                functions: [
+                    '标准化护理服务项目',
+                    '定义项目执行规范',
+                    '分配项目负责人员',
+                    '管理项目启用状态'
+                ],
+                sampleData: [
+                    { id: 1, project_name: '生命体征监测', project_category: '健康监护', description: '测量血压、心率、体温', standard_duration: 15, caregiver_id: 2, frequency: '每日3次' },
+                    { id: 2, project_name: '协助用餐', project_category: '生活照料', description: '协助客户进食，监督营养摄入', standard_duration: 30, caregiver_id: 3, frequency: '每日3次' }
+                ],
+                relatedTables: [
+                    { name: 'users', relation: 'N:1', description: '多个项目可以分配给一个护理人员' },
+                    { name: 'nursing_records', relation: '1:N', description: '一个项目可以有多个执行记录' }
+                ],
+                stats: { fields: 8, records: 10, relations: 2 }
+            },
+            nursing_records: {
+                name: '护理记录表',
+                code: 'nursing_records',
+                description: '护理执行记录管理，详细记录每次护理服务的执行情况和结果',
+                category: '护理管理',
+                columns: [
+                    { name: 'id', type: 'INT', isPrimary: true, comment: '主键ID，自增长' },
+                    { name: 'customer_id', type: 'INT', isForeign: true, comment: '客户ID，关联customers表' },
+                    { name: 'project_id', type: 'INT', isForeign: true, comment: '护理项目ID，关联nursing_projects表' },
+                    { name: 'caregiver_id', type: 'INT', isForeign: true, comment: '执行护理人员ID' },
+                    { name: 'execution_date', type: 'DATE', comment: '执行日期' },
+                    { name: 'execution_time', type: 'TIME', comment: '执行时间' },
+                    { name: 'duration', type: 'INT', comment: '实际执行时长，单位：分钟' },
+                    { name: 'execution_status', type: 'ENUM', comment: '执行状态：已完成、部分完成、未执行、异常' },
+                    { name: 'notes', type: 'TEXT', comment: '执行备注和观察记录' }
+                ],
+                functions: [
+                    '记录护理服务执行情况',
+                    '追踪护理质量和效果',
+                    '提供护理数据分析',
+                    '支持护理工作考核'
+                ],
+                sampleData: [
+                    { id: 1, customer_id: 1, project_id: 1, caregiver_id: 2, execution_date: '2024-06-19', execution_time: '09:00:00', duration: 15, execution_status: '已完成', notes: '血压正常' },
+                    { id: 2, customer_id: 2, project_id: 2, caregiver_id: 3, execution_date: '2024-06-19', execution_time: '12:00:00', duration: 25, execution_status: '部分完成', notes: '食欲不佳' }
+                ],
+                relatedTables: [
+                    { name: 'customers', relation: 'N:1', description: '多个护理记录属于一个客户' },
+                    { name: 'nursing_projects', relation: 'N:1', description: '多个护理记录对应一个护理项目' },
+                    { name: 'users', relation: 'N:1', description: '多个护理记录由一个护理人员执行' }
+                ],
+                stats: { fields: 9, records: 10, relations: 3 }
+            },
+            foods: {
+                name: '食品表',
+                code: 'foods',
+                description: '食品营养信息管理，建立食品库，记录营养成分和过敏源信息',
+                category: '膳食管理',
+                columns: [
+                    { name: 'id', type: 'INT', isPrimary: true, comment: '主键ID，自增长' },
+                    { name: 'food_name', type: 'VARCHAR(100)', comment: '食品名称，如：白粥、蒸蛋羹' },
+                    { name: 'food_category', type: 'VARCHAR(50)', comment: '食品分类：主食、蔬菜、荤菜、汤品等' },
+                    { name: 'unit', type: 'VARCHAR(10)', comment: '计量单位：份、碗、个等' },
+                    { name: 'calories_per_unit', type: 'DECIMAL(8,2)', comment: '单位热量，单位：卡路里' },
+                    { name: 'protein_content', type: 'DECIMAL(8,2)', comment: '蛋白质含量，单位：克' },
+                    { name: 'fat_content', type: 'DECIMAL(8,2)', comment: '脂肪含量，单位：克' },
+                    { name: 'carb_content', type: 'DECIMAL(8,2)', comment: '碳水化合物含量，单位：克' },
+                    { name: 'allergen_info', type: 'TEXT', comment: '过敏源信息' },
+                    { name: 'storage_requirements', type: 'TEXT', comment: '储存要求' },
+                    { name: 'status', type: 'TINYINT', comment: '食品状态：1-可用，0-停用' }
+                ],
+                functions: [
+                    '建立标准化食品库',
+                    '记录营养成分信息',
+                    '管理过敏源风险',
+                    '支持膳食营养分析'
+                ],
+                sampleData: [
+                    { id: 1, food_name: '白粥', food_category: '主食', unit: '碗', calories_per_unit: 120, protein_content: 2.5, allergen_info: '无' },
+                    { id: 2, food_name: '蒸蛋羹', food_category: '蛋类', unit: '份', calories_per_unit: 150, protein_content: 12.0, allergen_info: '鸡蛋' }
+                ],
+                relatedTables: [
+                    { name: 'meal_diaries', relation: '1:N', description: '一种食品可以在多个膳食记录中出现' }
+                ],
+                stats: { fields: 11, records: 10, relations: 1 }
+            },
+            meal_diaries: {
+                name: '膳食日记表',
+                code: 'meal_diaries',
+                description: '客户用餐记录管理，详细记录每位客户的日常饮食情况',
+                category: '膳食管理',
+                columns: [
+                    { name: 'id', type: 'INT', isPrimary: true, comment: '主键ID，自增长' },
+                    { name: 'customer_id', type: 'INT', isForeign: true, comment: '客户ID，关联customers表' },
+                    { name: 'meal_date', type: 'DATE', comment: '用餐日期' },
+                    { name: 'meal_type', type: 'ENUM', comment: '餐次：早餐、午餐、晚餐、加餐' },
+                    { name: 'food_id', type: 'INT', isForeign: true, comment: '食品ID，关联foods表' },
+                    { name: 'quantity', type: 'DECIMAL(8,2)', comment: '食用份量' },
+                    { name: 'notes', type: 'TEXT', comment: '用餐备注，如食欲情况' },
+                    { name: 'caregiver_id', type: 'INT', isForeign: true, comment: '记录护理人员ID' }
+                ],
+                functions: [
+                    '记录客户日常饮食',
+                    '监控营养摄入情况',
+                    '分析饮食习惯',
+                    '辅助膳食调整决策'
+                ],
+                sampleData: [
+                    { id: 1, customer_id: 1, meal_date: '2024-06-19', meal_type: '早餐', food_id: 1, quantity: 1.0, notes: '食欲正常', caregiver_id: 3 },
+                    { id: 2, customer_id: 1, meal_date: '2024-06-19', meal_type: '早餐', food_id: 2, quantity: 1.0, notes: '全部吃完', caregiver_id: 3 }
+                ],
+                relatedTables: [
+                    { name: 'customers', relation: 'N:1', description: '多个膳食记录属于一个客户' },
+                    { name: 'foods', relation: 'N:1', description: '多个膳食记录对应一种食品' },
+                    { name: 'users', relation: 'N:1', description: '多个膳食记录由一个护理人员记录' }
+                ],
+                stats: { fields: 8, records: 11, relations: 3 }
+            },
+            outing_records: {
+                name: '外出记录表',
+                code: 'outing_records',
+                description: '客户外出情况管理，记录客户外出申请、审批和返回情况',
+                category: '客户管理',
+                columns: [
+                    { name: 'id', type: 'INT', isPrimary: true, comment: '主键ID，自增长' },
+                    { name: 'customer_id', type: 'INT', isForeign: true, comment: '客户ID，关联customers表' },
+                    { name: 'outing_date', type: 'DATE', comment: '外出日期' },
+                    { name: 'outing_time', type: 'TIME', comment: '外出时间' },
+                    { name: 'return_time', type: 'TIME', comment: '预计返回时间' },
+                    { name: 'destination', type: 'VARCHAR(200)', comment: '外出目的地' },
+                    { name: 'companion', type: 'VARCHAR(100)', comment: '陪同人员信息' },
+                    { name: 'reason', type: 'TEXT', comment: '外出原因说明' },
+                    { name: 'approval_status', type: 'ENUM', comment: '审批状态：待批准、已批准、已拒绝' },
+                    { name: 'actual_return_time', type: 'TIME', comment: '实际返回时间' },
+                    { name: 'notes', type: 'TEXT', comment: '外出备注' },
+                    { name: 'caregiver_id', type: 'INT', isForeign: true, comment: '登记护理人员ID' }
+                ],
+                functions: [
+                    '管理客户外出申请',
+                    '控制外出审批流程',
+                    '监控客户外出安全',
+                    '记录外出返回情况'
+                ],
+                sampleData: [
+                    { id: 1, customer_id: 1, outing_date: '2024-06-18', outing_time: '09:00:00', return_time: '17:00:00', destination: '北京协和医院', companion: '张小明(儿子)', reason: '复查糖尿病', approval_status: '已批准' },
+                    { id: 2, customer_id: 2, outing_date: '2024-06-18', outing_time: '14:00:00', return_time: '18:00:00', destination: '家属住所', companion: '李小红(女儿)', reason: '家庭聚餐', approval_status: '已批准' }
+                ],
+                relatedTables: [
+                    { name: 'customers', relation: 'N:1', description: '多个外出记录属于一个客户' },
+                    { name: 'users', relation: 'N:1', description: '多个外出记录由一个护理人员登记' }
+                ],
+                stats: { fields: 12, records: 5, relations: 2 }
+            },
+            checkout_info: {
+                name: '退住信息表',
+                code: 'checkout_info',
+                description: '客户退住信息管理，记录客户退住的类型、原因和详细情况',
+                category: '客户管理',
+                columns: [
+                    { name: 'id', type: 'INT', isPrimary: true, comment: '主键ID，自增长' },
+                    { name: 'checkout_type', type: 'VARCHAR(20)', comment: '退住类型：正常退住、医疗转院、自愿退住等' },
+                    { name: 'checkout_reason', type: 'TEXT', comment: '退住原因详细说明' },
+                    { name: 'checkout_date', type: 'DATE', comment: '退住日期' },
+                    { name: 'remarks', type: 'TEXT', comment: '退住备注信息' }
+                ],
+                functions: [
+                    '记录客户退住信息',
+                    '分类管理退住原因',
+                    '提供退住数据统计',
+                    '支持退住流程管理'
+                ],
+                sampleData: [
+                    { id: 1, checkout_type: '正常退住', checkout_reason: '家属接回家中照料', checkout_date: '2024-06-15', remarks: '客户身体状况稳定' },
+                    { id: 2, checkout_type: '医疗转院', checkout_reason: '病情需要专科治疗', checkout_date: '2024-06-10', remarks: '转至专科医院继续治疗' }
+                ],
+                relatedTables: [
+                    { name: 'customers', relation: '1:N', description: '一条退住信息可以关联多个客户（历史记录）' }
+                ],
+                stats: { fields: 5, records: 3, relations: 1 }
+            },
+            role_menu_relations: {
+                name: '角色菜单关联表',
+                code: 'role_menu_relations',
+                description: '角色权限管理，定义不同角色可以访问的系统菜单权限',
+                category: '系统管理',
+                columns: [
+                    { name: 'id', type: 'INT', isPrimary: true, comment: '主键ID，自增长' },
+                    { name: 'role_id', type: 'INT', isForeign: true, comment: '角色ID，关联roles表' },
+                    { name: 'menu_id', type: 'INT', isForeign: true, comment: '菜单ID，关联menus表' }
+                ],
+                functions: [
+                    '控制角色菜单权限',
+                    '实现细粒度权限管理',
+                    '支持权限动态配置',
+                    '维护角色菜单关系'
+                ],
+                sampleData: [
+                    { id: 1, role_id: 1, menu_id: 1 },
+                    { id: 2, role_id: 1, menu_id: 2 },
+                    { id: 3, role_id: 2, menu_id: 4 }
+                ],
+                relatedTables: [
+                    { name: 'roles', relation: 'N:1', description: '多个权限关系属于一个角色' },
+                    { name: 'menus', relation: 'N:1', description: '多个权限关系对应一个菜单' }
+                ],
+                stats: { fields: 3, records: 25, relations: 2 }
+            },
+            customer_caregiver_assignments: {
+                name: '客户护理人员分配表',
+                code: 'customer_caregiver_assignments',
+                description: '护理人员分配管理，记录客户与护理人员的分配关系和职责',
+                category: '护理管理',
+                columns: [
+                    { name: 'id', type: 'INT', isPrimary: true, comment: '主键ID，自增长' },
+                    { name: 'customer_id', type: 'INT', isForeign: true, comment: '客户ID，关联customers表' },
+                    { name: 'caregiver_id', type: 'INT', isForeign: true, comment: '护理人员ID，关联users表' },
+                    { name: 'assignment_date', type: 'DATE', comment: '分配日期' },
+                    { name: 'end_date', type: 'DATE', comment: '分配结束日期' },
+                    { name: 'primary_caregiver', type: 'TINYINT', comment: '是否主要护理人：1-是，0-否' },
+                    { name: 'status', type: 'TINYINT', comment: '分配状态：1-有效，0-无效' }
+                ],
+                functions: [
+                    '管理护理人员分配',
+                    '明确主要护理责任',
+                    '支持护理团队协作',
+                    '记录分配历史变更'
+                ],
+                sampleData: [
+                    { id: 1, customer_id: 1, caregiver_id: 2, assignment_date: '2024-01-15', primary_caregiver: 1, status: 1 },
+                    { id: 2, customer_id: 1, caregiver_id: 3, assignment_date: '2024-01-15', primary_caregiver: 0, status: 1 },
+                    { id: 3, customer_id: 2, caregiver_id: 2, assignment_date: '2024-02-20', primary_caregiver: 1, status: 1 }
+                ],
+                relatedTables: [
+                    { name: 'customers', relation: 'N:1', description: '多个分配记录属于一个客户' },
+                    { name: 'users', relation: 'N:1', description: '多个分配记录对应一个护理人员' }
+                ],
+                stats: { fields: 7, records: 11, relations: 2 }
+            }
+        };
+
+        // 当前选中的表
+        let currentTable = null;
+
+        // 初始化页面
+        function initializePage() {
+            generateTableList();
+        }
+
+        // 生成表列表
+        function generateTableList() {
+            const tableItems = document.getElementById('tableItems');
+            
+            Object.keys(databaseTables).forEach(tableKey => {
+                const table = databaseTables[tableKey];
+                
+                const tableItem = document.createElement('div');
+                tableItem.className = 'table-item';
+                tableItem.onclick = () => showTableDetails(tableKey);
+                
+                tableItem.innerHTML = `
+                    <div class="table-name">${table.name}</div>
+                    <div class="table-code">${table.code}</div>
+                    <div class="table-desc">${table.description}</div>
+                `;
+                
+                tableItems.appendChild(tableItem);
+            });
+        }
+
+        // 显示表详情
+        function showTableDetails(tableKey) {
+            const table = databaseTables[tableKey];
+            if (!table) return;
+
+            // 更新选中状态
+            document.querySelectorAll('.table-item').forEach(item => item.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            // 更新标题
+            document.getElementById('detailsTitle').textContent = table.name;
+            document.getElementById('detailsSubtitle').textContent = `${table.code} • ${table.category}`;
+            
+            // 生成详情内容
+            const detailsContent = document.getElementById('detailsContent');
+            detailsContent.innerHTML = generateTableDetailsHTML(table);
+            
+            currentTable = tableKey;
+        }
+
+        // 生成表详情HTML
+        function generateTableDetailsHTML(table) {
+            return `
+                <!-- 基本信息 -->
+                <div class="detail-section">
+                    <div class="section-header">
+                        <span class="section-icon">📋</span>
+                        基本信息
+                    </div>
+                    <div class="section-content">
+                        <p><strong>表名：</strong>${table.name} (${table.code})</p>
+                        <p><strong>分类：</strong>${table.category}</p>
+                        <p><strong>描述：</strong>${table.description}</p>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number">${table.stats.fields}</div>
+                                <div class="stat-label">字段数</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${table.stats.records}</div>
+                                <div class="stat-label">示例记录</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${table.stats.relations}</div>
+                                <div class="stat-label">关联表数</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 表结构 -->
+                <div class="detail-section">
+                    <div class="section-header">
+                        <span class="section-icon">🏗️</span>
+                        表结构
+                    </div>
+                    <div class="section-content">
+                        <table class="structure-table">
+                            <thead>
+                                <tr>
+                                    <th>字段名</th>
+                                    <th>数据类型</th>
+                                    <th>约束</th>
+                                    <th>说明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${table.columns.map(col => `
+                                    <tr>
+                                        <td class="field-name">${col.name}</td>
+                                        <td class="field-type">${col.type}</td>
+                                        <td>
+                                            ${col.isPrimary ? '<span class="primary-key">主键</span>' : ''}
+                                            ${col.isForeign ? '<span class="foreign-key">外键</span>' : ''}
+                                        </td>
+                                        <td>${col.comment}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 功能说明 -->
+                <div class="detail-section">
+                    <div class="section-header">
+                        <span class="section-icon">⚙️</span>
+                        功能说明
+                    </div>
+                    <div class="section-content">
+                        <div class="function-desc">
+                            该表在系统中的主要功能和用途：
+                        </div>
+                        <ul class="function-list">
+                            ${table.functions.map(func => `
+                                <li class="function-item">
+                                    <div class="function-icon">✓</div>
+                                    ${func}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 数据示例 -->
+                <div class="detail-section">
+                    <div class="section-header">
+                        <span class="section-icon">📊</span>
+                        数据示例
+                    </div>
+                    <div class="section-content">
+                        ${generateSampleDataTable(table)}
+                    </div>
+                </div>
+
+                <!-- 相关表 -->
+                <div class="detail-section">
+                    <div class="section-header">
+                        <span class="section-icon">🔗</span>
+                        相关表关系
+                    </div>
+                    <div class="section-content">
+                        <p>该表与以下表存在关联关系：</p>
+                        <div class="related-tables">
+                            ${table.relatedTables.map(rel => `
+                                <a href="#" class="related-table" onclick="showRelatedTable('${rel.name}')">
+                                    ${databaseTables[rel.name] ? databaseTables[rel.name].name : rel.name}
+                                    <span class="relation-type">(${rel.relation})</span>
+                                </a>
+                            `).join('')}
+                        </div>
+                        <div style="margin-top: 15px;">
+                            ${table.relatedTables.map(rel => `
+                                <p style="margin-bottom: 8px; color: #666; font-size: 14px;">
+                                    <strong>${rel.name}:</strong> ${rel.description}
+                                </p>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 生成示例数据表格
+        function generateSampleDataTable(table) {
+            if (!table.sampleData || table.sampleData.length === 0) {
+                return '<p style="color: #7f8c8d; font-style: italic;">暂无示例数据</p>';
+            }
+
+            const headers = Object.keys(table.sampleData[0]);
+            
+            return `
+                <table class="sample-table">
+                    <thead>
+                        <tr>
+                            ${headers.map(header => `<th>${header}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${table.sampleData.map(row => `
+                            <tr>
+                                ${headers.map(header => `<td>${row[header] || '-'}</td>`).join('')}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // 显示相关表
+        function showRelatedTable(tableName) {
+            if (databaseTables[tableName]) {
+                showTableDetails(tableName);
+                
+                // 滚动到对应的表项
+                const tableItems = document.querySelectorAll('.table-item');
+                const tableKeys = Object.keys(databaseTables);
+                const targetIndex = tableKeys.indexOf(tableName);
+                
+                if (targetIndex >= 0 && tableItems[targetIndex]) {
+                    tableItems[targetIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+</body>
+</html>
