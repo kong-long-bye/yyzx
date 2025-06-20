@@ -87,156 +87,175 @@
           <h1 id="page-title">床位管理</h1>
         </div>
 
-        <div class="search-bar">
-          <input type="text" class="search-input" placeholder="请输入搜索关键词...">
-        </div>
 
-        <div class="content-area">
-          <!-- 床位管理示意图 -->
-          <div id="bed-overview" class="tab-content active">
-            <div class="bed-overview">
-              <h2 class="section-title">床位使用统计</h2>
-              <div class="stats-grid">
-                <div class="stat-card">
-                  <div class="stat-number">120</div>
-                  <div class="stat-label">总床位数</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-number">98</div>
-                  <div class="stat-label">已占用</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-number">15</div>
-                  <div class="stat-label">空闲床位</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-number">7</div>
-                  <div class="stat-label">维修中</div>
-                </div>
-              </div>
 
-              <h2 class="section-title">床位分布图</h2>
+          <div class="search-bar">
+            <input type="text" class="search-input" placeholder="请输入搜索关键词...">
+          </div>
 
-              <!-- 一楼 -->
-              <div class="floor-section">
-                <div class="floor-header">一楼 (A区)</div>
-                <div class="room-grid">
-                  <div class="room-card">
-                    <div class="room-header">
-                      <span class="room-number">A101</span>
-                      <span class="room-type">双人间</span>
-                    </div>
-                    <div class="beds-container">
-                      <div class="bed-item bed-occupied">A101-1<br>张三</div>
-                      <div class="bed-item bed-available">A101-2<br>空闲</div>
-                    </div>
+          <div class="content-area">
+            <!-- 床位管理示意图 -->
+            <div id="bed-overview" class="tab-content active">
+              <div class="bed-overview">
+                <h2 class="section-title">床位使用统计</h2>
+                <div v-if="loading" class="loading-message">
+                  <div class="loading-spinner">加载中...</div>
+                </div>
+                <div v-else class="stats-grid">
+                  <div class="stat-card total">
+                    <div class="stat-number">{{ bedStats.total }}</div>
+                    <div class="stat-label">总床位数</div>
                   </div>
-                  <div class="room-card">
-                    <div class="room-header">
-                      <span class="room-number">A102</span>
-                      <span class="room-type">双人间</span>
-                    </div>
-                    <div class="beds-container">
-                      <div class="bed-item bed-occupied">A102-1<br>李四</div>
-                      <div class="bed-item bed-occupied">A102-2<br>王五</div>
-                    </div>
+                  <div class="stat-card occupied">
+                    <div class="stat-number">{{ bedStats.occupied }}</div>
+                    <div class="stat-label">已占用</div>
                   </div>
-                  <div class="room-card">
-                    <div class="room-header">
-                      <span class="room-number">A103</span>
-                      <span class="room-type">单人间</span>
-                    </div>
-                    <div class="beds-container">
-                      <div class="bed-item bed-maintenance">A103-1<br>维修中</div>
-                    </div>
+                  <div class="stat-card available">
+                    <div class="stat-number">{{ bedStats.available }}</div>
+                    <div class="stat-label">空闲床位</div>
                   </div>
-                  <div class="room-card">
-                    <div class="room-header">
-                      <span class="room-number">A104</span>
-                      <span class="room-type">双人间</span>
-                    </div>
-                    <div class="beds-container">
-                      <div class="bed-item bed-occupied">A104-1<br>赵六</div>
-                      <div class="bed-item bed-reserved">A104-2<br>预留</div>
-                    </div>
+                  <div class="stat-card maintenance">
+                    <div class="stat-number">{{ bedStats.maintenance }}</div>
+                    <div class="stat-label">维修中</div>
+                  </div>
+                  <div class="stat-card reserved">
+                    <div class="stat-number">{{ bedStats.reserved }}</div>
+                    <div class="stat-label">预留</div>
                   </div>
                 </div>
-              </div>
 
-              <!-- 二楼 -->
-              <div class="floor-section">
-                <div class="floor-header">二楼 (B区)</div>
-                <div class="room-grid">
-                  <div class="room-card">
-                    <div class="room-header">
-                      <span class="room-number">B201</span>
-                      <span class="room-type">双人间</span>
-                    </div>
-                    <div class="beds-container">
-                      <div class="bed-item bed-occupied">B201-1<br>钱七</div>
-                      <div class="bed-item bed-occupied">B201-2<br>孙八</div>
+                <h2 class="section-title">床位分布图</h2>
+
+                <div v-if="loading" class="loading-message">
+                  <div class="loading-spinner">加载中...</div>
+                </div>
+                <div v-else>
+                  <!-- 按楼层分组显示 -->
+                  <div v-for="floor in getFloors()" :key="floor" class="floor-section">
+                    <div class="floor-header">{{ floor }}楼 ({{ getFloorLabel(floor) }}区)</div>
+                    <div class="room-grid">
+                      <div
+                          v-for="room in getRoomsByFloor(floor)"
+                          :key="room.id"
+                          class="room-card"
+                      >
+                        <div class="room-header">
+                          <span class="room-number">{{ room.roomNumber }}</span>
+                          <span class="room-type">{{ room.roomType }}</span>
+                        </div>
+                        <div class="beds-container" :class="getBedGridClass(room.beds.length)">
+                          <div
+                              v-for="bed in room.beds"
+                              :key="bed.id"
+                              :class="getBedStatusClass(bed.status)"
+                              class="bed-item"
+                              v-html="getBedDisplayText(bed)"
+                          >
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div class="room-card">
-                    <div class="room-header">
-                      <span class="room-number">B202</span>
-                      <span class="room-type">三人间</span>
-                    </div>
-                    <div class="beds-container">
-                      <div class="bed-item bed-occupied">B202-1<br>周九</div>
-                      <div class="bed-item bed-available">B202-2<br>空闲</div>
-                      <div class="bed-item bed-available">B202-3<br>空闲</div>
-                    </div>
-                  </div>
-                  <div class="room-card">
-                    <div class="room-header">
-                      <span class="room-number">B203</span>
-                      <span class="room-type">双人间</span>
-                    </div>
-                    <div class="beds-container">
-                      <div class="bed-item bed-maintenance">B203-1<br>维修中</div>
-                      <div class="bed-item bed-available">B203-2<br>空闲</div>
-                    </div>
+
+                  <div v-if="roomsWithBeds.length === 0" class="empty-state">
+                    <span class="empty-icon">🛏️</span>
+                    <p>暂无房间数据</p>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- 其他内容省略，此处只展示核心功能 -->
-          <div id="bed-management" class="tab-content">
-            <h2 class="section-title">床位管理功能开发中...</h2>
-          </div>
 
-          <div id="customer-checkin" class="tab-content">
-            <h2 class="section-title">客户入住登记功能开发中...</h2>
+            <!-- 床位管理 - 使用BedManagement组件 -->
+            <div id="bed-management" class="tab-content">
+              <BedManagement />
+            </div>
+            <div id="customer-checkin" class="tab-content">
+              <h2 class="section-title">客户入住登记功能开发中...</h2>
+            </div>
+
+            <div id="customer-outing" class="tab-content">
+              <h2 class="section-title">外出登记功能开发中...</h2>
+            </div>
+
+            <div id="customer-checkout" class="tab-content">
+              <h2 class="section-title">退住登记功能开发中...</h2>
+            </div>
+
+            <div id="nursing-level" class="tab-content">
+              <h2 class="section-title">护理级别功能开发中...</h2>
+            </div>
+
+            <div id="nursing-project" class="tab-content">
+              <h2 class="section-title">护理项目功能开发中...</h2>
+            </div>
+
+            <div id="nursing-needs" class="tab-content">
+              <h2 class="section-title">客户护理需求功能开发中...</h2>
+            </div>
+
+            <div id="nursing-records" class="tab-content">
+              <h2 class="section-title">护理记录功能开发中...</h2>
+            </div>
+
+            <div id="service-assignment" class="tab-content">
+              <h2 class="section-title">设置服务对象功能开发中...</h2>
+            </div>
+
+            <div id="service-focus" class="tab-content">
+              <h2 class="section-title">服务关注功能开发中...</h2>
+            </div>
+
+            <div id="user-management" class="tab-content">
+              <h2 class="section-title">基础数据维护功能开发中...</h2>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import type { User, UserRole } from '@/types'
+import { useRouter, useRoute } from 'vue-router'
+import { bedApi } from '@/utils/bedApi'
+import type { User, BedStats, Room, Bed } from '@/types'
+import BedManagement from "@/components/BedManagement.vue";
 
 // 组合式API设置
 const router = useRouter()
+const route = useRoute()
 const currentUser = ref<User | null>(null)
 
-onMounted(() => {
+// 床位相关数据
+const bedStats = ref<BedStats>({
+  total: 0,
+  occupied: 0,
+  available: 0,
+  maintenance: 0,
+  reserved: 0
+})
+
+const roomsWithBeds = ref<(Room & { beds: Bed[] })[]>([])
+const loading = ref<boolean>(false)
+
+// 生命周期
+onMounted(async () => {
   // 获取当前登录用户信息
   const userStr = localStorage.getItem('user')
   if (userStr) {
     currentUser.value = JSON.parse(userStr) as User
   } else {
-    // 如果没有用户信息，跳转到登录页
     router.push('/login')
+    return
   }
+
+  // 加载床位数据
+  await loadBedData()
 })
 
+// 方法定义
 const getRoleName = (roleId?: number): string => {
   const roleMap: Record<number, string> = {
     1: '系统管理员',
@@ -252,6 +271,89 @@ const logout = (): void => {
     localStorage.removeItem('token')
     router.push('/login')
   }
+}
+
+const loadBedData = async (): Promise<void> => {
+  loading.value = true
+  try {
+    // 获取床位统计
+    const statsResponse = await bedApi.getBedStats()
+    if (statsResponse.code === 200) {
+      bedStats.value = statsResponse.data
+    }
+
+    // 获取房间和床位数据
+    const roomsResponse = await bedApi.getAllRooms()
+    if (roomsResponse.code === 200) {
+      const rooms = roomsResponse.data
+
+      // 为每个房间获取床位信息
+      const roomsWithBedsData = await Promise.all(
+          rooms.map(async (room) => {
+            const bedsResponse = await bedApi.getBedsByRoomId(room.id)
+            return {
+              ...room,
+              beds: bedsResponse.code === 200 ? bedsResponse.data : []
+            }
+          })
+      )
+
+      roomsWithBeds.value = roomsWithBedsData
+    }
+  } catch (error) {
+    console.error('加载床位数据失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const getBedStatusClass = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    '空闲': 'bed-available',
+    '占用': 'bed-occupied',
+    '维修': 'bed-maintenance',
+    '预留': 'bed-reserved'
+  }
+  return statusMap[status] || 'bed-available'
+}
+
+const getBedDisplayText = (bed: Bed): string => {
+  if (bed.status === '占用' && bed.customerName) {
+    return `${bed.bedNumber}<br>${bed.customerName}`
+  }
+  return `${bed.bedNumber}<br>${bed.status}`
+}
+
+// 获取所有楼层
+const getFloors = (): number[] => {
+  const floors = [...new Set(roomsWithBeds.value.map(room => room.floorNumber))]
+  return floors.sort((a, b) => a - b)
+}
+
+// 获取楼层标签
+const getFloorLabel = (floor: number): string => {
+  const labels: Record<number, string> = {
+    1: 'A',
+    2: 'B',
+    3: 'C',
+    4: 'D',
+    5: 'E'
+  }
+  return labels[floor] || String.fromCharCode(64 + floor)
+}
+
+// 根据楼层获取房间
+const getRoomsByFloor = (floor: number) => {
+  return roomsWithBeds.value
+      .filter(room => room.floorNumber === floor)
+      .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber))
+}
+
+// 根据床位数量获取网格样式
+const getBedGridClass = (bedCount: number): string => {
+  if (bedCount <= 2) return 'beds-two'
+  if (bedCount === 3) return 'beds-three'
+  return 'beds-four'
 }
 
 const toggleMenu = (event: Event): void => {
@@ -281,6 +383,7 @@ const toggleMenu = (event: Event): void => {
 }
 
 const switchTab = (tabId: string): void => {
+
   // 隐藏所有内容
   document.querySelectorAll('.tab-content').forEach(content => {
     content.classList.remove('active')
@@ -570,6 +673,23 @@ body {
   margin-bottom: 20px;
 }
 
+.loading-message {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+  font-size: 16px;
+}
+
+.loading-spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -578,11 +698,36 @@ body {
 }
 
 .stat-card {
-  background: linear-gradient(45deg, #3498db, #2980b9);
   color: white;
   padding: 20px;
   border-radius: 10px;
   text-align: center;
+  border-left: 4px solid;
+}
+
+.stat-card.total {
+  background: linear-gradient(45deg, #3498db, #2980b9);
+  border-left-color: #2980b9;
+}
+
+.stat-card.occupied {
+  background: linear-gradient(45deg, #e74c3c, #c0392b);
+  border-left-color: #c0392b;
+}
+
+.stat-card.available {
+  background: linear-gradient(45deg, #27ae60, #219a52);
+  border-left-color: #219a52;
+}
+
+.stat-card.maintenance {
+  background: linear-gradient(45deg, #f39c12, #e67e22);
+  border-left-color: #e67e22;
+}
+
+.stat-card.reserved {
+  background: linear-gradient(45deg, #9b59b6, #8e44ad);
+  border-left-color: #8e44ad;
 }
 
 .stat-number {
@@ -619,6 +764,12 @@ body {
   border-radius: 8px;
   padding: 15px;
   background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.room-card:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 .room-header {
@@ -631,17 +782,32 @@ body {
 .room-number {
   font-weight: bold;
   color: #2c3e50;
+  font-size: 16px;
 }
 
 .room-type {
   font-size: 12px;
   color: #7f8c8d;
+  background: #ecf0f1;
+  padding: 2px 6px;
+  border-radius: 3px;
 }
 
 .beds-container {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
+}
+
+.beds-container.beds-two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.beds-container.beds-three {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.beds-container.beds-four {
+  grid-template-columns: repeat(2, 1fr);
 }
 
 .bed-item {
@@ -651,6 +817,17 @@ body {
   font-size: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+.bed-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 .bed-available {
@@ -675,5 +852,62 @@ body {
   background: #d6eaf8;
   color: #3498db;
   border: 1px solid #3498db;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px;
+  color: #7f8c8d;
+}
+
+.empty-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 15px;
+}
+
+.empty-state p {
+  font-size: 16px;
+  margin: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .room-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .bed-item {
+    font-size: 10px;
+    padding: 6px;
+    min-height: 45px;
+  }
+
+  .room-number {
+    font-size: 14px;
+  }
+
+  .stat-number {
+    font-size: 24px;
+  }
 }
 </style>
