@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqupt.yyzx.mapper.CustomerMapper">
+
+    <!-- 客户结果映射 -->
+    <resultMap id="CustomerResultMap" type="com.cqupt.yyzx.entity.Customer">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="idCard" column="id_card"/>
+        <result property="gender" column="gender"/>
+        <result property="birthDate" column="birth_date"/>
+        <result property="phone" column="phone"/>
+        <result property="emergencyContact" column="emergency_contact"/>
+        <result property="emergencyPhone" column="emergency_phone"/>
+        <result property="address" column="address"/>
+        <result property="medicalHistory" column="medical_history"/>
+        <result property="allergies" column="allergies"/>
+        <result property="bedId" column="bed_id"/>
+        <result property="admissionDate" column="admission_date"/>
+        <result property="checkoutInfoId" column="checkout_info_id"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <!-- 关联字段 -->
+        <result property="bedNumber" column="bed_number"/>
+        <result property="roomNumber" column="room_number"/>
+        <result property="floorNumber" column="floor_number"/>
+        <result property="nursingLevel" column="nursing_level"/>
+        <result property="primaryCaregiver" column="primary_caregiver"/>
+    </resultMap>
+
+    <!-- 分页查询客户列表（包含床位和护理信息） -->
+    <select id="selectCustomerListWithDetails" resultMap="CustomerResultMap">
+        SELECT
+        c.id,
+        c.name,
+        c.id_card,
+        c.gender,
+        c.birth_date,
+        c.phone,
+        c.emergency_contact,
+        c.emergency_phone,
+        c.address,
+        c.medical_history,
+        c.allergies,
+        c.bed_id,
+        c.admission_date,
+        c.checkout_info_id,
+        c.audit_status,
+        c.status,
+        c.created_at,
+        c.updated_at,
+        b.bed_number,
+        r.room_number,
+        r.floor_number,
+        na.level_name as nursing_level,
+        u.real_name as primary_caregiver
+        FROM customers c
+        LEFT JOIN beds b ON c.bed_id = b.id
+        LEFT JOIN rooms r ON b.room_id = r.id
+        LEFT JOIN nursing_agreements na ON c.id = na.customer_id AND na.level_status = '生效'
+        LEFT JOIN customer_caregiver_assignments cca ON c.id = cca.customer_id AND cca.primary_caregiver = 1 AND cca.status = 1
+        LEFT JOIN users u ON cca.caregiver_id = u.id
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                c.name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR c.id_card LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR c.phone LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR b.bed_number LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR r.room_number LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="auditStatus != null and auditStatus != ''">
+                AND c.audit_status = #{auditStatus}
+            </if>
+            <if test="status != null">
+                AND c.status = #{status}
+            </if>
+        </where>
+        ORDER BY c.created_at DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <!-- 查询客户总数 -->
+    <select id="countCustomers" resultType="Integer">
+        SELECT COUNT(*)
+        FROM customers c
+        LEFT JOIN beds b ON c.bed_id = b.id
+        LEFT JOIN rooms r ON b.room_id = r.id
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                c.name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR c.id_card LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR c.phone LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR b.bed_number LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR r.room_number LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="auditStatus != null and auditStatus != ''">
+                AND c.audit_status = #{auditStatus}
+            </if>
+            <if test="status != null">
+                AND c.status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据ID查询客户详细信息 -->
+    <select id="selectCustomerById" resultMap="CustomerResultMap">
+        SELECT
+            c.*,
+            b.bed_number,
+            r.room_number,
+            r.floor_number,
+            na.level_name as nursing_level,
+            u.real_name as primary_caregiver
+        FROM customers c
+                 LEFT JOIN beds b ON c.bed_id = b.id
+                 LEFT JOIN rooms r ON b.room_id = r.id
+                 LEFT JOIN nursing_agreements na ON c.id = na.customer_id AND na.level_status = '生效'
+                 LEFT JOIN customer_caregiver_assignments cca ON c.id = cca.customer_id AND cca.primary_caregiver = 1 AND cca.status = 1
+                 LEFT JOIN users u ON cca.caregiver_id = u.id
+        WHERE c.id = #{id}
+    </select>
+
+    <!-- 根据身份证号查询客户 -->
+    <select id="selectCustomerByIdCard" resultMap="CustomerResultMap">
+        SELECT * FROM customers WHERE id_card = #{idCard}
+    </select>
+
+    <!-- 插入新客户 -->
+    <insert id="insertCustomer" parameterType="com.cqupt.yyzx.entity.Customer" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO customers (
+            name,
+            id_card,
+            gender,
+            birth_date,
+            phone,
+            emergency_contact,
+            emergency_phone,
+            address,
+            medical_history,
+            allergies,
+            bed_id,
+            admission_date,
+            audit_status,
+            status,
+            created_at,
+            updated_at
+        )
+        VALUES (
+                   #{name},
+                   #{idCard},
+                   #{gender},
+                   #{birthDate},
+                   #{phone},
+                   #{emergencyContact},
+                   #{emergencyPhone},
+                   #{address},
+                   #{medicalHistory},
+                   #{allergies},
+                   #{bedId},
+                   #{admissionDate},
+                   #{auditStatus},
+                   #{status},
+                   NOW(),
+                   NOW()
+               )
+    </insert>
+
+    <!-- 更新客户信息 -->
+    <update id="updateCustomer" parameterType="com.cqupt.yyzx.entity.Customer">
+        UPDATE customers
+        SET
+            name = #{name},
+            id_card = #{idCard},
+            gender = #{gender},
+            birth_date = #{birthDate},
+            phone = #{phone},
+            emergency_contact = #{emergencyContact},
+            emergency_phone = #{emergencyPhone},
+            address = #{address},
+            medical_history = #{medicalHistory},
+            allergies = #{allergies},
+            bed_id = #{bedId},
+            admission_date = #{admissionDate},
+            audit_status = #{auditStatus},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除客户 -->
+    <delete id="deleteCustomer">
+        DELETE FROM customers WHERE id = #{id}
+    </delete>
+
+    <!-- 批量删除客户 -->
+    <delete id="deleteCustomers">
+        DELETE FROM customers WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 更新客户审核状态 -->
+    <update id="updateCustomerAuditStatus">
+        UPDATE customers
+        SET audit_status = #{auditStatus}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新客户状态 -->
+    <update id="updateCustomerStatus">
+        UPDATE customers
+        SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 客户入住登记 -->
+    <insert id="checkinCustomer" parameterType="com.cqupt.yyzx.entity.Customer" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO customers (
+            name,
+            id_card,
+            gender,
+            birth_date,
+            phone,
+            emergency_contact,
+            emergency_phone,
+            address,
+            medical_history,
+            allergies,
+            bed_id,
+            admission_date,
+            audit_status,
+            status,
+            created_at,
+            updated_at
+        )
+        VALUES (
+                   #{name},
+                   #{idCard},
+                   #{gender},
+                   #{birthDate},
+                   #{phone},
+                   #{emergencyContact},
+                   #{emergencyPhone},
+                   #{address},
+                   #{medicalHistory},
+                   #{allergies},
+                   #{bedId},
+                   #{admissionDate},
+                   #{auditStatus},
+                   #{status},
+                   NOW(),
+                   NOW()
+               )
+    </insert>
+
+    <!-- 客户退住登记 -->
+    <update id="checkoutCustomer">
+        UPDATE customers
+        SET
+            status = 0,
+            checkout_info_id = #{checkoutInfoId},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 查询可用床位列表 -->
+    <select id="selectAvailableBeds" resultType="java.util.Map">
+        SELECT
+            b.id,
+            b.bed_number,
+            b.bed_type,
+            b.daily_price,
+            r.room_number,
+            r.floor_number,
+            r.room_type
+        FROM beds b
+                 JOIN rooms r ON b.room_id = r.id
+        WHERE b.status = '空闲' AND r.status = 1
+        ORDER BY r.floor_number, r.room_number, b.bed_number
+    </select>
+
+    <!-- 查询护理人员列表 -->
+    <select id="selectCaregiversList" resultType="java.util.Map">
+        SELECT
+            u.id,
+            u.real_name,
+            u.phone,
+            r.role_name,
+            COUNT(cca.customer_id) as customer_count
+        FROM users u
+                 JOIN roles r ON u.role_id = r.id
+                 LEFT JOIN customer_caregiver_assignments cca ON u.id = cca.caregiver_id AND cca.status = 1
+        WHERE u.role_id IN (2, 3) AND u.status = 1
+        GROUP BY u.id, u.real_name, u.phone, r.role_name
+        ORDER BY customer_count, u.real_name
+    </select>
+
+    <!-- 检查身份证号是否已存在 -->
+    <select id="checkIdCardExists" resultType="Integer">
+        SELECT COUNT(*) FROM customers
+        WHERE id_card = #{idCard}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 获取客户统计信息 -->
+    <select id="getCustomerStats" resultType="java.util.Map">
+        SELECT
+            status,
+            COUNT(*) as count
+        FROM customers
+        GROUP BY status
+    </select>
+
+    <!-- 查询即将到期的护理协议 -->
+    <select id="selectCustomersWithExpiredAgreements" resultMap="CustomerResultMap">
+        SELECT
+            c.*,
+            b.bed_number,
+            r.room_number,
+            na.level_name as nursing_level,
+            na.end_date
+        FROM customers c
+                 JOIN nursing_agreements na ON c.id = na.customer_id
+                 LEFT JOIN beds b ON c.bed_id = b.id
+                 LEFT JOIN rooms r ON b.room_id = r.id
+        WHERE c.status = 1
+          AND na.level_status = '生效'
+          AND na.end_date IS NOT NULL
+          AND na.end_date &lt;= DATE_ADD(CURDATE(), INTERVAL #{days} DAY)
+        ORDER BY na.end_date
+    </select>
+
+    <!-- 查询待审核的客户列表 -->
+    <select id="selectPendingAuditCustomers" resultMap="CustomerResultMap">
+        SELECT
+            c.*,
+            b.bed_number,
+            r.room_number
+        FROM customers c
+                 LEFT JOIN beds b ON c.bed_id = b.id
+                 LEFT JOIN rooms r ON b.room_id = r.id
+        WHERE c.audit_status = '待审核'
+        ORDER BY c.created_at
+    </select>
+
+</mapper>

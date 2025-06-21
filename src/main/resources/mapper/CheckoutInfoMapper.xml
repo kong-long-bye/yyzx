@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqupt.yyzx.mapper.CheckoutInfoMapper">
+
+    <!-- 退住信息结果映射 -->
+    <resultMap id="CheckoutInfoResultMap" type="com.cqupt.yyzx.entity.CheckoutInfo">
+        <id property="id" column="id"/>
+        <result property="checkoutType" column="checkout_type"/>
+        <result property="checkoutReason" column="checkout_reason"/>
+        <result property="checkoutDate" column="checkout_date"/>
+        <result property="remarks" column="remarks"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <!-- 分页查询退住信息列表 -->
+    <select id="selectCheckoutInfoList" resultMap="CheckoutInfoResultMap">
+        SELECT
+        ci.id,
+        ci.checkout_type,
+        ci.checkout_reason,
+        ci.checkout_date,
+        ci.remarks,
+        ci.created_at
+        FROM checkout_info ci
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                ci.checkout_type LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR ci.checkout_reason LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR ci.remarks LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="checkoutType != null and checkoutType != ''">
+                AND ci.checkout_type = #{checkoutType}
+            </if>
+            <if test="startDate != null">
+                AND ci.checkout_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND ci.checkout_date &lt;= #{endDate}
+            </if>
+        </where>
+        ORDER BY ci.checkout_date DESC, ci.created_at DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <!-- 查询退住信息总数 -->
+    <select id="countCheckoutInfos" resultType="Integer">
+        SELECT COUNT(*)
+        FROM checkout_info ci
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                ci.checkout_type LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR ci.checkout_reason LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR ci.remarks LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="checkoutType != null and checkoutType != ''">
+                AND ci.checkout_type = #{checkoutType}
+            </if>
+            <if test="startDate != null">
+                AND ci.checkout_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND ci.checkout_date &lt;= #{endDate}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据ID查询退住信息详细信息 -->
+    <select id="selectCheckoutInfoById" resultMap="CheckoutInfoResultMap">
+        SELECT * FROM checkout_info WHERE id = #{id}
+    </select>
+
+    <!-- 插入新退住信息 -->
+    <insert id="insertCheckoutInfo" parameterType="com.cqupt.yyzx.entity.CheckoutInfo" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO checkout_info (
+            checkout_type,
+            checkout_reason,
+            checkout_date,
+            remarks,
+            created_at
+        )
+        VALUES (
+                   #{checkoutType},
+                   #{checkoutReason},
+                   #{checkoutDate},
+                   #{remarks},
+                   NOW()
+               )
+    </insert>
+
+    <!-- 更新退住信息 -->
+    <update id="updateCheckoutInfo" parameterType="com.cqupt.yyzx.entity.CheckoutInfo">
+        UPDATE checkout_info
+        SET
+            checkout_type = #{checkoutType},
+            checkout_reason = #{checkoutReason},
+            checkout_date = #{checkoutDate},
+            remarks = #{remarks}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除退住信息 -->
+    <delete id="deleteCheckoutInfo">
+        DELETE FROM checkout_info WHERE id = #{id}
+    </delete>
+
+    <!-- 批量删除退住信息 -->
+    <delete id="deleteCheckoutInfos">
+        DELETE FROM checkout_info WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 获取退住统计信息 -->
+    <select id="getCheckoutStats" resultType="java.util.Map">
+        SELECT
+            DATE(checkout_date) as checkout_date,
+            COUNT(*) as count
+        FROM checkout_info
+        WHERE checkout_date BETWEEN #{startDate} AND #{endDate}
+        GROUP BY DATE(checkout_date)
+        ORDER BY checkout_date
+    </select>
+
+    <!-- 查询最近的退住记录 -->
+    <select id="selectRecentCheckouts" resultMap="CheckoutInfoResultMap">
+        SELECT * FROM checkout_info
+        ORDER BY checkout_date DESC, created_at DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 根据退住类型统计 -->
+    <select id="getCheckoutStatsByType" resultType="java.util.Map">
+        SELECT
+            checkout_type,
+            COUNT(*) as count
+        FROM checkout_info
+        GROUP BY checkout_type
+        ORDER BY count DESC
+    </select>
+
+</mapper>

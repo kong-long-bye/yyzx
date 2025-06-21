@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqupt.yyzx.mapper.OutingRecordMapper">
+
+    <!-- 外出记录结果映射 -->
+    <resultMap id="OutingRecordResultMap" type="com.cqupt.yyzx.entity.OutingRecord">
+        <id property="id" column="id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="outingDate" column="outing_date"/>
+        <result property="outingTime" column="outing_time"/>
+        <result property="returnTime" column="return_time"/>
+        <result property="destination" column="destination"/>
+        <result property="companion" column="companion"/>
+        <result property="reason" column="reason"/>
+        <result property="approvalStatus" column="approval_status"/>
+        <result property="actualReturnTime" column="actual_return_time"/>
+        <result property="notes" column="notes"/>
+        <result property="caregiverId" column="caregiver_id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <!-- 关联字段 -->
+        <result property="customerName" column="customer_name"/>
+        <result property="caregiverName" column="caregiver_name"/>
+    </resultMap>
+
+    <!-- 分页查询外出记录列表（包含客户和登记人信息） -->
+    <select id="selectOutingRecordListWithDetails" resultMap="OutingRecordResultMap">
+        SELECT
+        o.id,
+        o.customer_id,
+        o.outing_date,
+        o.outing_time,
+        o.return_time,
+        o.destination,
+        o.companion,
+        o.reason,
+        o.approval_status,
+        o.actual_return_time,
+        o.notes,
+        o.caregiver_id,
+        o.created_at,
+        o.updated_at,
+        c.name as customer_name,
+        u.real_name as caregiver_name
+        FROM outing_records o
+        JOIN customers c ON o.customer_id = c.id
+        LEFT JOIN users u ON o.caregiver_id = u.id
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                c.name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR o.destination LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR o.companion LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR o.reason LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="approvalStatus != null and approvalStatus != ''">
+                AND o.approval_status = #{approvalStatus}
+            </if>
+            <if test="outingDate != null">
+                AND o.outing_date = #{outingDate}
+            </if>
+            <if test="customerId != null">
+                AND o.customer_id = #{customerId}
+            </if>
+        </where>
+        ORDER BY o.outing_date DESC, o.outing_time DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <!-- 查询外出记录总数 -->
+    <select id="countOutingRecords" resultType="Integer">
+        SELECT COUNT(*)
+        FROM outing_records o
+        JOIN customers c ON o.customer_id = c.id
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                c.name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR o.destination LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR o.companion LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR o.reason LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="approvalStatus != null and approvalStatus != ''">
+                AND o.approval_status = #{approvalStatus}
+            </if>
+            <if test="outingDate != null">
+                AND o.outing_date = #{outingDate}
+            </if>
+            <if test="customerId != null">
+                AND o.customer_id = #{customerId}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据ID查询外出记录详细信息 -->
+    <select id="selectOutingRecordById" resultMap="OutingRecordResultMap">
+        SELECT
+            o.*,
+            c.name as customer_name,
+            u.real_name as caregiver_name
+        FROM outing_records o
+                 JOIN customers c ON o.customer_id = c.id
+                 LEFT JOIN users u ON o.caregiver_id = u.id
+        WHERE o.id = #{id}
+    </select>
+
+    <!-- 插入新外出记录 -->
+    <insert id="insertOutingRecord" parameterType="com.cqupt.yyzx.entity.OutingRecord" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO outing_records (
+            customer_id,
+            outing_date,
+            outing_time,
+            return_time,
+            destination,
+            companion,
+            reason,
+            approval_status,
+            actual_return_time,
+            notes,
+            caregiver_id,
+            created_at,
+            updated_at
+        )
+        VALUES (
+                   #{customerId},
+                   #{outingDate},
+                   #{outingTime},
+                   #{returnTime},
+                   #{destination},
+                   #{companion},
+                   #{reason},
+                   #{approvalStatus},
+                   #{actualReturnTime},
+                   #{notes},
+                   #{caregiverId},
+                   NOW(),
+                   NOW()
+               )
+    </insert>
+
+    <!-- 更新外出记录信息 -->
+    <update id="updateOutingRecord" parameterType="com.cqupt.yyzx.entity.OutingRecord">
+        UPDATE outing_records
+        SET
+            customer_id = #{customerId},
+            outing_date = #{outingDate},
+            outing_time = #{outingTime},
+            return_time = #{returnTime},
+            destination = #{destination},
+            companion = #{companion},
+            reason = #{reason},
+            approval_status = #{approvalStatus},
+            actual_return_time = #{actualReturnTime},
+            notes = #{notes},
+            caregiver_id = #{caregiverId},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除外出记录 -->
+    <delete id="deleteOutingRecord">
+        DELETE FROM outing_records WHERE id = #{id}
+    </delete>
+
+    <!-- 批量删除外出记录 -->
+    <delete id="deleteOutingRecords">
+        DELETE FROM outing_records WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 更新外出记录审批状态 -->
+    <update id="updateOutingRecordApprovalStatus">
+        UPDATE outing_records
+        SET approval_status = #{approvalStatus}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新外出记录实际返回时间 -->
+    <update id="updateOutingRecordActualReturnTime">
+        UPDATE outing_records
+        SET actual_return_time = #{actualReturnTime}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 查询客户当日外出记录 -->
+    <select id="selectTodayOutingRecordsByCustomer" resultMap="OutingRecordResultMap">
+        SELECT * FROM outing_records
+        WHERE customer_id = #{customerId}
+          AND outing_date = CURDATE()
+        ORDER BY outing_time DESC
+    </select>
+
+    <!-- 查询未返回的外出记录 -->
+    <select id="selectUnreturnedOutingRecords" resultMap="OutingRecordResultMap">
+        SELECT
+            o.*,
+            c.name as customer_name,
+            u.real_name as caregiver_name
+        FROM outing_records o
+                 JOIN customers c ON o.customer_id = c.id
+                 LEFT JOIN users u ON o.caregiver_id = u.id
+        WHERE o.approval_status = '已批准'
+          AND o.actual_return_time IS NULL
+        ORDER BY o.outing_date, o.outing_time
+    </select>
+
+    <!-- 查询超时未返回的外出记录 -->
+    <select id="selectOverdueOutingRecords" resultMap="OutingRecordResultMap">
+        SELECT
+            o.*,
+            c.name as customer_name,
+            u.real_name as caregiver_name
+        FROM outing_records o
+                 JOIN customers c ON o.customer_id = c.id
+                 LEFT JOIN users u ON o.caregiver_id = u.id
+        WHERE o.approval_status = '已批准'
+          AND o.actual_return_time IS NULL
+          AND (
+            (o.outing_date = CURDATE() AND o.return_time &lt; CURTIME())
+                OR o.outing_date &lt; CURDATE()
+            )
+        ORDER BY o.outing_date, o.outing_time
+    </select>
+
+    <!-- 查询待审批的外出申请 -->
+    <select id="selectPendingApprovalOutingRecords" resultMap="OutingRecordResultMap">
+        SELECT
+            o.*,
+            c.name as customer_name,
+            u.real_name as caregiver_name
+        FROM outing_records o
+                 JOIN customers c ON o.customer_id = c.id
+                 LEFT JOIN users u ON o.caregiver_id = u.id
+        WHERE o.approval_status = '待批准'
+        ORDER BY o.created_at
+    </select>
+
+    <!-- 获取外出记录统计信息 -->
+    <select id="getOutingRecordStats" resultType="java.util.Map">
+        SELECT
+            approval_status,
+            COUNT(*) as count
+        FROM outing_records
+        WHERE outing_date BETWEEN #{startDate} AND #{endDate}
+        GROUP BY approval_status
+    </select>
+
+    <!-- 查询客户的外出历史记录 -->
+    <select id="selectOutingHistoryByCustomer" resultMap="OutingRecordResultMap">
+        SELECT
+        o.*,
+        c.name as customer_name,
+        u.real_name as caregiver_name
+        FROM outing_records o
+        JOIN customers c ON o.customer_id = c.id
+        LEFT JOIN users u ON o.caregiver_id = u.id
+        WHERE o.customer_id = #{customerId}
+        ORDER BY o.outing_date DESC, o.outing_time DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 检查客户是否有未完成的外出记录 -->
+    <select id="checkCustomerHasUnfinishedOuting" resultType="Integer">
+        SELECT COUNT(*)
+        FROM outing_records
+        WHERE customer_id = #{customerId}
+          AND approval_status = '已批准'
+          AND actual_return_time IS NULL
+    </select>
+
+</mapper>

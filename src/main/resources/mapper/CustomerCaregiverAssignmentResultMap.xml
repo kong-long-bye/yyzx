@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqupt.yyzx.mapper.CustomerCaregiverAssignmentMapper">
+
+    <!-- 客户护理人员分配结果映射 -->
+    <resultMap id="CustomerCaregiverAssignmentResultMap" type="com.cqupt.yyzx.entity.CustomerCaregiverAssignment">
+        <id property="id" column="id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="caregiverId" column="caregiver_id"/>
+        <result property="assignmentDate" column="assignment_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="primaryCaregiver" column="primary_caregiver"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <!-- 关联字段 -->
+        <result property="customerName" column="customer_name"/>
+        <result property="caregiverName" column="caregiver_name"/>
+    </resultMap>
+
+    <!-- 根据客户ID查询护理人员分配 -->
+    <select id="selectAssignmentsByCustomerId" resultMap="CustomerCaregiverAssignmentResultMap">
+        SELECT
+            cca.*,
+            c.name as customer_name,
+            u.real_name as caregiver_name
+        FROM customer_caregiver_assignments cca
+                 JOIN customers c ON cca.customer_id = c.id
+                 JOIN users u ON cca.caregiver_id = u.id
+        WHERE cca.customer_id = #{customerId}
+          AND cca.status = 1
+        ORDER BY cca.primary_caregiver DESC, cca.assignment_date DESC
+    </select>
+
+    <!-- 根据护理人员ID查询客户分配 -->
+    <select id="selectAssignmentsByCaregiverId" resultMap="CustomerCaregiverAssignmentResultMap">
+        SELECT
+            cca.*,
+            c.name as customer_name,
+            u.real_name as caregiver_name
+        FROM customer_caregiver_assignments cca
+                 JOIN customers c ON cca.customer_id = c.id
+                 JOIN users u ON cca.caregiver_id = u.id
+        WHERE cca.caregiver_id = #{caregiverId}
+          AND cca.status = 1
+        ORDER BY cca.primary_caregiver DESC, cca.assignment_date DESC
+    </select>
+
+    <!-- 根据ID查询分配详细信息 -->
+    <select id="selectAssignmentById" resultMap="CustomerCaregiverAssignmentResultMap">
+        SELECT
+            cca.*,
+            c.name as customer_name,
+            u.real_name as caregiver_name
+        FROM customer_caregiver_assignments cca
+                 JOIN customers c ON cca.customer_id = c.id
+                 JOIN users u ON cca.caregiver_id = u.id
+        WHERE cca.id = #{id}
+    </select>
+
+    <!-- 插入新分配记录 -->
+    <insert id="insertAssignment" parameterType="com.cqupt.yyzx.entity.CustomerCaregiverAssignment" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO customer_caregiver_assignments (
+            customer_id,
+            caregiver_id,
+            assignment_date,
+            end_date,
+            primary_caregiver,
+            status,
+            created_at,
+            updated_at
+        )
+        VALUES (
+                   #{customerId},
+                   #{caregiverId},
+                   #{assignmentDate},
+                   #{endDate},
+                   #{primaryCaregiver},
+                   #{status},
+                   NOW(),
+                   NOW()
+               )
+    </insert>
+
+    <!-- 更新分配记录 -->
+    <update id="updateAssignment" parameterType="com.cqupt.yyzx.entity.CustomerCaregiverAssignment">
+        UPDATE customer_caregiver_assignments
+        SET
+            customer_id = #{customerId},
+            caregiver_id = #{caregiverId},
+            assignment_date = #{assignmentDate},
+            end_date = #{endDate},
+            primary_caregiver = #{primaryCaregiver},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除分配记录 -->
+    <delete id="deleteAssignment">
+        DELETE FROM customer_caregiver_assignments WHERE id = #{id}
+    </delete>
+
+    <!-- 更新分配状态 -->
+    <update id="updateAssignmentStatus">
+        UPDATE customer_caregiver_assignments
+        SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 终止客户的所有护理人员分配 -->
+    <update id="terminateCustomerAssignments">
+        UPDATE customer_caregiver_assignments
+        SET status = 0, end_date = CURDATE(), updated_at = NOW()
+        WHERE customer_id = #{customerId}
+          AND status = 1
+    </update>
+
+    <!-- 查询客户的主要护理人员 -->
+    <select id="selectPrimaryCaregiverByCustomerId" resultMap="CustomerCaregiverAssignmentResultMap">
+        SELECT
+            cca.*,
+            c.name as customer_name,
+            u.real_name as caregiver_name
+        FROM customer_caregiver_assignments cca
+                 JOIN customers c ON cca.customer_id = c.id
+                 JOIN users u ON cca.caregiver_id = u.id
+        WHERE cca.customer_id = #{customerId}
+          AND cca.primary_caregiver = 1
+          AND cca.status = 1
+            LIMIT 1
+    </select>
+
+    <!-- 设置主要护理人员 -->
+    <update id="setPrimaryCaregiver">
+        UPDATE customer_caregiver_assignments
+        SET primary_caregiver = CASE
+                                    WHEN caregiver_id = #{caregiverId} THEN 1
+                                    ELSE 0
+            END,
+            updated_at = NOW()
+        WHERE customer_id = #{customerId}
+          AND status = 1
+    </update>
+
+    <!-- 取消主要护理人员设置 -->
+    <update id="unsetPrimaryCaregiver">
+        UPDATE customer_caregiver_assignments
+        SET primary_caregiver = 0, updated_at = NOW()
+        WHERE customer_id = #{customerId}
+          AND status = 1
+    </update>
+
+    <!-- 检查护理人员是否已分配给客户 -->
+    <select id="checkAssignmentExists" resultType="Integer">
+        SELECT COUNT(*)
+        FROM customer_caregiver_assignments
+        WHERE customer_id = #{customerId}
+          AND caregiver_id = #{caregiverId}
+          AND status = 1
+    </select>
+
+    <!-- 获取护理人员工作负载统计 -->
+    <select id="getCaregiverWorkloadStats" resultType="java.util.Map">
+        SELECT
+            u.id as caregiver_id,
+            u.real_name as caregiver_name,
+            u.phone,
+            r.role_name,
+            COUNT(cca.customer_id) as customer_count,
+            COUNT(CASE WHEN cca.primary_caregiver = 1 THEN 1 END) as primary_count
+        FROM users u
+                 JOIN roles r ON u.role_id = r.id
+                 LEFT JOIN customer_caregiver_assignments cca ON u.id = cca.caregiver_id AND cca.status = 1
+        WHERE u.role_id IN (2, 3) AND u.status = 1
+        GROUP BY u.id, u.real_name, u.phone, r.role_name
+        ORDER BY customer_count DESC, u.real_name
+    </select>
+
+    <!-- 查询分配历史记录 -->
+    <select id="selectAssignmentHistory" resultMap="CustomerCaregiverAssignmentResultMap">
+        SELECT
+        cca.*,
+        c.name as customer_name,
+        u.real_name as caregiver_name
+        FROM customer_caregiver_assignments cca
+        JOIN customers c ON cca.customer_id = c.id
+        JOIN users u ON cca.caregiver_id = u.id
+        WHERE cca.customer_id = #{customerId}
+        ORDER BY cca.assignment_date DESC, cca.created_at DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+</mapper>

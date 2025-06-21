@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqupt.yyzx.mapper.NursingAgreementMapper">
+
+    <!-- 护理协议结果映射 -->
+    <resultMap id="NursingAgreementResultMap" type="com.cqupt.yyzx.entity.NursingAgreement">
+        <id property="id" column="id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="levelName" column="level_name"/>
+        <result property="levelCode" column="level_code"/>
+        <result property="levelStatus" column="level_status"/>
+        <result property="monthlyFee" column="monthly_fee"/>
+        <result property="serviceContent" column="service_content"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 根据客户ID查询有效的护理协议 -->
+    <select id="selectActiveAgreementByCustomerId" resultMap="NursingAgreementResultMap">
+        SELECT * FROM nursing_agreements
+        WHERE customer_id = #{customerId}
+          AND level_status = '生效'
+        ORDER BY start_date DESC
+            LIMIT 1
+    </select>
+
+    <!-- 根据客户ID查询所有护理协议 -->
+    <select id="selectAgreementsByCustomerId" resultMap="NursingAgreementResultMap">
+        SELECT * FROM nursing_agreements
+        WHERE customer_id = #{customerId}
+        ORDER BY start_date DESC
+    </select>
+
+    <!-- 根据ID查询护理协议详细信息 -->
+    <select id="selectAgreementById" resultMap="NursingAgreementResultMap">
+        SELECT * FROM nursing_agreements WHERE id = #{id}
+    </select>
+
+    <!-- 插入新护理协议 -->
+    <insert id="insertAgreement" parameterType="com.cqupt.yyzx.entity.NursingAgreement" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO nursing_agreements (
+            customer_id,
+            level_name,
+            level_code,
+            level_status,
+            monthly_fee,
+            service_content,
+            start_date,
+            end_date,
+            created_at,
+            updated_at
+        )
+        VALUES (
+                   #{customerId},
+                   #{levelName},
+                   #{levelCode},
+                   #{levelStatus},
+                   #{monthlyFee},
+                   #{serviceContent},
+                   #{startDate},
+                   #{endDate},
+                   NOW(),
+                   NOW()
+               )
+    </insert>
+
+    <!-- 更新护理协议信息 -->
+    <update id="updateAgreement" parameterType="com.cqupt.yyzx.entity.NursingAgreement">
+        UPDATE nursing_agreements
+        SET
+            customer_id = #{customerId},
+            level_name = #{levelName},
+            level_code = #{levelCode},
+            level_status = #{levelStatus},
+            monthly_fee = #{monthlyFee},
+            service_content = #{serviceContent},
+            start_date = #{startDate},
+            end_date = #{endDate},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除护理协议 -->
+    <delete id="deleteAgreement">
+        DELETE FROM nursing_agreements WHERE id = #{id}
+    </delete>
+
+    <!-- 更新护理协议状态 -->
+    <update id="updateAgreementStatus">
+        UPDATE nursing_agreements
+        SET level_status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 终止客户的所有有效协议 -->
+    <update id="terminateCustomerAgreements">
+        UPDATE nursing_agreements
+        SET level_status = '终止', updated_at = NOW()
+        WHERE customer_id = #{customerId}
+          AND level_status = '生效'
+    </update>
+
+    <!-- 查询即将到期的协议 -->
+    <select id="selectExpiredAgreements" resultMap="NursingAgreementResultMap">
+        SELECT * FROM nursing_agreements
+        WHERE level_status = '生效'
+          AND end_date IS NOT NULL
+          AND end_date &lt;= DATE_ADD(CURDATE(), INTERVAL #{days} DAY)
+        ORDER BY end_date
+    </select>
+
+    <!-- 获取护理等级选项 -->
+    <select id="getNursingLevelOptions" resultType="java.util.Map">
+        SELECT
+            'L001' as level_code,
+            '一级护理' as level_name,
+            '24小时专业护理、医疗监护、生活照料、康复训练' as service_content,
+            8000.00 as monthly_fee
+        UNION ALL
+        SELECT
+            'L002' as level_code,
+            '二级护理' as level_name,
+            '日常护理、健康监测、生活协助、血糖监测' as service_content,
+            5000.00 as monthly_fee
+        UNION ALL
+        SELECT
+            'L003' as level_code,
+            '三级护理' as level_name,
+            '基础护理、生活照料、健康指导' as service_content,
+            3000.00 as monthly_fee
+    </select>
+
+    <!-- 获取护理协议统计信息 -->
+    <select id="getAgreementStats" resultType="java.util.Map">
+        SELECT
+            level_name,
+            level_status,
+            COUNT(*) as count,
+            AVG(monthly_fee) as avg_fee
+        FROM nursing_agreements
+        GROUP BY level_name, level_status
+        ORDER BY level_name, level_status
+    </select>
+
+</mapper>
