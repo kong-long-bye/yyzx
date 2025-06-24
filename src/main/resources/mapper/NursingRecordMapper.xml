@@ -1,0 +1,425 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqupt.yyzx.mapper.NursingRecordMapper">
+
+    <!-- 护理记录结果映射 -->
+    <resultMap id="NursingRecordResultMap" type="com.cqupt.yyzx.entity.NursingRecord">
+        <id property="id" column="id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="projectId" column="project_id"/>
+        <result property="caregiverId" column="caregiver_id"/>
+        <result property="executionDate" column="execution_date"/>
+        <result property="executionTime" column="execution_time"/>
+        <result property="duration" column="duration"/>
+        <result property="executionStatus" column="execution_status"/>
+        <result property="notes" column="notes"/>
+        <result property="createdAt" column="created_at"/>
+        <!-- 关联字段 -->
+        <result property="customerName" column="customer_name"/>
+        <result property="projectName" column="project_name"/>
+        <result property="projectCategory" column="project_category"/>
+        <result property="caregiverName" column="caregiver_name"/>
+        <result property="standardDuration" column="standard_duration"/>
+    </resultMap>
+
+    <!-- 分页查询护理记录列表（包含客户、项目、护理人员信息） -->
+    <select id="selectRecordListWithDetails" resultMap="NursingRecordResultMap">
+        SELECT
+        nr.id,
+        nr.customer_id,
+        nr.project_id,
+        nr.caregiver_id,
+        nr.execution_date,
+        nr.execution_time,
+        nr.duration,
+        nr.execution_status,
+        nr.notes,
+        nr.created_at,
+        c.name as customer_name,
+        np.project_name,
+        np.project_category,
+        np.standard_duration,
+        u.real_name as caregiver_name
+        FROM nursing_records nr
+        JOIN customers c ON nr.customer_id = c.id
+        JOIN nursing_projects np ON nr.project_id = np.id
+        JOIN users u ON nr.caregiver_id = u.id
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                c.name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR np.project_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR u.real_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR nr.notes LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="executionStatus != null and executionStatus != ''">
+                AND nr.execution_status = #{executionStatus}
+            </if>
+            <if test="startDate != null">
+                AND nr.execution_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND nr.execution_date &lt;= #{endDate}
+            </if>
+            <if test="customerId != null">
+                AND nr.customer_id = #{customerId}
+            </if>
+            <if test="projectId != null">
+                AND nr.project_id = #{projectId}
+            </if>
+            <if test="caregiverId != null">
+                AND nr.caregiver_id = #{caregiverId}
+            </if>
+        </where>
+        ORDER BY nr.execution_date DESC, nr.execution_time DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <!-- 查询护理记录总数 -->
+    <select id="countRecords" resultType="Integer">
+        SELECT COUNT(*)
+        FROM nursing_records nr
+        JOIN customers c ON nr.customer_id = c.id
+        JOIN nursing_projects np ON nr.project_id = np.id
+        JOIN users u ON nr.caregiver_id = u.id
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                c.name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR np.project_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR u.real_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR nr.notes LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="executionStatus != null and executionStatus != ''">
+                AND nr.execution_status = #{executionStatus}
+            </if>
+            <if test="startDate != null">
+                AND nr.execution_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND nr.execution_date &lt;= #{endDate}
+            </if>
+            <if test="customerId != null">
+                AND nr.customer_id = #{customerId}
+            </if>
+            <if test="projectId != null">
+                AND nr.project_id = #{projectId}
+            </if>
+            <if test="caregiverId != null">
+                AND nr.caregiver_id = #{caregiverId}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据ID查询护理记录详细信息 -->
+    <select id="selectRecordById" resultMap="NursingRecordResultMap">
+        SELECT
+            nr.*,
+            c.name as customer_name,
+            np.project_name,
+            np.project_category,
+            np.standard_duration,
+            u.real_name as caregiver_name
+        FROM nursing_records nr
+                 JOIN customers c ON nr.customer_id = c.id
+                 JOIN nursing_projects np ON nr.project_id = np.id
+                 JOIN users u ON nr.caregiver_id = u.id
+        WHERE nr.id = #{id}
+    </select>
+
+    <!-- 插入新护理记录 -->
+    <insert id="insertRecord" parameterType="com.cqupt.yyzx.entity.NursingRecord" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO nursing_records (
+            customer_id,
+            project_id,
+            caregiver_id,
+            execution_date,
+            execution_time,
+            duration,
+            execution_status,
+            notes,
+            created_at
+        )
+        VALUES (
+                   #{customerId},
+                   #{projectId},
+                   #{caregiverId},
+                   #{executionDate},
+                   #{executionTime},
+                   #{duration},
+                   #{executionStatus},
+                   #{notes},
+                   NOW()
+               )
+    </insert>
+
+    <!-- 更新护理记录信息 -->
+    <update id="updateRecord" parameterType="com.cqupt.yyzx.entity.NursingRecord">
+        UPDATE nursing_records
+        SET
+            customer_id = #{customerId},
+            project_id = #{projectId},
+            caregiver_id = #{caregiverId},
+            execution_date = #{executionDate},
+            execution_time = #{executionTime},
+            duration = #{duration},
+            execution_status = #{executionStatus},
+            notes = #{notes}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除护理记录 -->
+    <delete id="deleteRecord">
+        DELETE FROM nursing_records WHERE id = #{id}
+    </delete>
+
+    <!-- 批量删除护理记录 -->
+    <delete id="deleteRecords">
+        DELETE FROM nursing_records WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 根据客户ID查询护理记录 -->
+    <select id="selectRecordsByCustomerId" resultMap="NursingRecordResultMap">
+        SELECT
+        nr.*,
+        c.name as customer_name,
+        np.project_name,
+        np.project_category,
+        u.real_name as caregiver_name
+        FROM nursing_records nr
+        JOIN customers c ON nr.customer_id = c.id
+        JOIN nursing_projects np ON nr.project_id = np.id
+        JOIN users u ON nr.caregiver_id = u.id
+        WHERE nr.customer_id = #{customerId}
+        ORDER BY nr.execution_date DESC, nr.execution_time DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 根据护理人员ID查询护理记录 -->
+    <select id="selectRecordsByCaregiverId" resultMap="NursingRecordResultMap">
+        SELECT
+        nr.*,
+        c.name as customer_name,
+        np.project_name,
+        np.project_category,
+        u.real_name as caregiver_name
+        FROM nursing_records nr
+        JOIN customers c ON nr.customer_id = c.id
+        JOIN nursing_projects np ON nr.project_id = np.id
+        JOIN users u ON nr.caregiver_id = u.id
+        WHERE nr.caregiver_id = #{caregiverId}
+        <if test="startDate != null">
+            AND nr.execution_date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND nr.execution_date &lt;= #{endDate}
+        </if>
+        ORDER BY nr.execution_date DESC, nr.execution_time DESC
+    </select>
+
+    <!-- 根据项目ID查询护理记录 -->
+    <select id="selectRecordsByProjectId" resultMap="NursingRecordResultMap">
+        SELECT
+        nr.*,
+        c.name as customer_name,
+        np.project_name,
+        np.project_category,
+        u.real_name as caregiver_name
+        FROM nursing_records nr
+        JOIN customers c ON nr.customer_id = c.id
+        JOIN nursing_projects np ON nr.project_id = np.id
+        JOIN users u ON nr.caregiver_id = u.id
+        WHERE nr.project_id = #{projectId}
+        <if test="startDate != null">
+            AND nr.execution_date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND nr.execution_date &lt;= #{endDate}
+        </if>
+        ORDER BY nr.execution_date DESC, nr.execution_time DESC
+    </select>
+
+    <!-- 查询今日护理记录 -->
+    <select id="selectTodayRecords" resultMap="NursingRecordResultMap">
+        SELECT
+        nr.*,
+        c.name as customer_name,
+        np.project_name,
+        np.project_category,
+        u.real_name as caregiver_name
+        FROM nursing_records nr
+        JOIN customers c ON nr.customer_id = c.id
+        JOIN nursing_projects np ON nr.project_id = np.id
+        JOIN users u ON nr.caregiver_id = u.id
+        WHERE nr.execution_date = CURDATE()
+        <if test="caregiverId != null">
+            AND nr.caregiver_id = #{caregiverId}
+        </if>
+        ORDER BY nr.execution_time DESC
+    </select>
+
+    <!-- 查询未完成的护理记录 -->
+    <select id="selectUncompletedRecords" resultMap="NursingRecordResultMap">
+        SELECT
+            nr.*,
+            c.name as customer_name,
+            np.project_name,
+            np.project_category,
+            u.real_name as caregiver_name
+        FROM nursing_records nr
+                 JOIN customers c ON nr.customer_id = c.id
+                 JOIN nursing_projects np ON nr.project_id = np.id
+                 JOIN users u ON nr.caregiver_id = u.id
+        WHERE nr.execution_status IN ('未执行', '部分完成')
+        ORDER BY nr.execution_date, nr.execution_time
+    </select>
+
+    <!-- 获取护理记录统计信息 -->
+    <select id="getRecordStats" resultType="java.util.Map">
+        SELECT
+            execution_status,
+            COUNT(*) as count
+        FROM nursing_records
+        WHERE execution_date BETWEEN #{startDate} AND #{endDate}
+        GROUP BY execution_status
+    </select>
+
+    <!-- 获取护理人员工作量统计 -->
+    <select id="getCaregiverWorkloadStats" resultType="java.util.Map">
+        SELECT
+            u.id as caregiver_id,
+            u.real_name as caregiver_name,
+            COUNT(nr.id) as record_count,
+            SUM(COALESCE(nr.duration, np.standard_duration)) as total_duration,
+            AVG(COALESCE(nr.duration, np.standard_duration)) as avg_duration,
+            COUNT(CASE WHEN nr.execution_status = '已完成' THEN 1 END) as completed_count
+        FROM users u
+                 LEFT JOIN nursing_records nr ON u.id = nr.caregiver_id
+            AND nr.execution_date BETWEEN #{startDate} AND #{endDate}
+                 LEFT JOIN nursing_projects np ON nr.project_id = np.id
+        WHERE u.role_id IN (2, 3) AND u.status = 1
+        GROUP BY u.id, u.real_name
+        ORDER BY record_count DESC
+    </select>
+
+    <!-- 获取项目执行统计 -->
+    <select id="getProjectExecutionStats" resultType="java.util.Map">
+        SELECT
+            np.id as project_id,
+            np.project_name,
+            np.project_category,
+            COUNT(nr.id) as execution_count,
+            COUNT(CASE WHEN nr.execution_status = '已完成' THEN 1 END) as completed_count,
+            COUNT(CASE WHEN nr.execution_status = '未执行' THEN 1 END) as unexecuted_count,
+            ROUND(COUNT(CASE WHEN nr.execution_status = '已完成' THEN 1 END) * 100.0 / COUNT(nr.id), 2) as completion_rate
+        FROM nursing_projects np
+                 LEFT JOIN nursing_records nr ON np.id = nr.project_id
+            AND nr.execution_date BETWEEN #{startDate} AND #{endDate}
+        WHERE np.status = 1
+        GROUP BY np.id, np.project_name, np.project_category
+        ORDER BY execution_count DESC
+    </select>
+
+    <!-- 获取客户护理统计 -->
+    <select id="getCustomerCareStats" resultType="java.util.Map">
+        SELECT
+            np.project_name,
+            np.project_category,
+            COUNT(nr.id) as record_count,
+            SUM(COALESCE(nr.duration, np.standard_duration)) as total_duration,
+            COUNT(CASE WHEN nr.execution_status = '已完成' THEN 1 END) as completed_count
+        FROM nursing_records nr
+                 JOIN nursing_projects np ON nr.project_id = np.id
+        WHERE nr.customer_id = #{customerId}
+          AND nr.execution_date BETWEEN #{startDate} AND #{endDate}
+        GROUP BY np.id, np.project_name, np.project_category
+        ORDER BY record_count DESC
+    </select>
+
+    <!-- 查询重复护理记录 -->
+    <select id="selectDuplicateRecords" resultMap="NursingRecordResultMap">
+        SELECT * FROM nursing_records
+        WHERE customer_id = #{customerId}
+          AND project_id = #{projectId}
+          AND execution_date = #{executionDate}
+    </select>
+
+    <!-- 批量插入护理记录 -->
+    <insert id="batchInsertRecords" parameterType="java.util.List">
+        INSERT INTO nursing_records (
+        customer_id,
+        project_id,
+        caregiver_id,
+        execution_date,
+        execution_time,
+        duration,
+        execution_status,
+        notes,
+        created_at
+        )
+        VALUES
+        <foreach collection="records" item="record" separator=",">
+            (
+            #{record.customerId},
+            #{record.projectId},
+            #{record.caregiverId},
+            #{record.executionDate},
+            #{record.executionTime},
+            #{record.duration},
+            #{record.executionStatus},
+            #{record.notes},
+            NOW()
+            )
+        </foreach>
+    </insert>
+
+    <!-- 更新护理记录状态 -->
+    <update id="updateRecordStatus">
+        UPDATE nursing_records
+        SET execution_status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据条件查询护理记录数量 -->
+    <select id="getRecordCountByCondition" resultType="Integer">
+        SELECT COUNT(*)
+        FROM nursing_records
+        WHERE customer_id = #{customerId}
+          AND project_id = #{projectId}
+          AND execution_date = #{executionDate}
+    </select>
+
+    <!-- 查询护理质量评估数据 -->
+    <select id="getNursingQualityData" resultType="java.util.Map">
+        SELECT
+            DATE(nr.execution_date) as care_date,
+            COUNT(nr.id) as total_records,
+            COUNT(CASE WHEN nr.execution_status = '已完成' THEN 1 END) as completed_records,
+            ROUND(COUNT(CASE WHEN nr.execution_status = '已完成' THEN 1 END) * 100.0 / COUNT(nr.id), 2) as completion_rate,
+            AVG(CASE
+            WHEN nr.duration IS NOT NULL AND np.standard_duration IS NOT NULL AND np.standard_duration > 0
+            THEN ABS(nr.duration - np.standard_duration) * 100.0 / np.standard_duration
+            ELSE 0
+            END) as duration_variance,
+            ROUND(100 - AVG(CASE
+            WHEN nr.duration IS NOT NULL AND np.standard_duration IS NOT NULL AND np.standard_duration > 0
+            THEN ABS(nr.duration - np.standard_duration) * 100.0 / np.standard_duration
+            ELSE 0
+            END), 2) as duration_compliance
+        FROM nursing_records nr
+            JOIN nursing_projects np ON nr.project_id = np.id
+        WHERE nr.execution_date BETWEEN #{startDate} AND #{endDate}
+        GROUP BY DATE(nr.execution_date)
+        ORDER BY care_date DESC
+    </select>
+
+</mapper>
