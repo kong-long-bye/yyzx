@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqupt.yyzx.mapper.NursingProjectMapper">
+
+    <!-- 护理项目结果映射 -->
+    <resultMap id="NursingProjectResultMap" type="com.cqupt.yyzx.entity.NursingProject">
+        <id property="id" column="id"/>
+        <result property="projectName" column="project_name"/>
+        <result property="projectCategory" column="project_category"/>
+        <result property="description" column="description"/>
+        <result property="standardDuration" column="standard_duration"/>
+        <result property="caregiverId" column="caregiver_id"/>
+        <result property="frequency" column="frequency"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <!-- 关联字段 -->
+        <result property="caregiverName" column="caregiver_name"/>
+    </resultMap>
+
+    <!-- 分页查询护理项目列表（包含护理人员信息） -->
+    <select id="selectProjectListWithDetails" resultMap="NursingProjectResultMap">
+        SELECT
+        np.id,
+        np.project_name,
+        np.project_category,
+        np.description,
+        np.standard_duration,
+        np.caregiver_id,
+        np.frequency,
+        np.status,
+        np.created_at,
+        np.updated_at,
+        u.real_name as caregiver_name
+        FROM nursing_projects np
+        LEFT JOIN users u ON np.caregiver_id = u.id
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                np.project_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR np.project_category LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR np.description LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR u.real_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="projectCategory != null and projectCategory != ''">
+                AND np.project_category = #{projectCategory}
+            </if>
+            <if test="status != null">
+                AND np.status = #{status}
+            </if>
+            <if test="caregiverId != null">
+                AND np.caregiver_id = #{caregiverId}
+            </if>
+        </where>
+        ORDER BY np.created_at DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <!-- 查询护理项目总数 -->
+    <select id="countProjects" resultType="Integer">
+        SELECT COUNT(*)
+        FROM nursing_projects np
+        LEFT JOIN users u ON np.caregiver_id = u.id
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                np.project_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR np.project_category LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR np.description LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR u.real_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="projectCategory != null and projectCategory != ''">
+                AND np.project_category = #{projectCategory}
+            </if>
+            <if test="status != null">
+                AND np.status = #{status}
+            </if>
+            <if test="caregiverId != null">
+                AND np.caregiver_id = #{caregiverId}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据ID查询护理项目详细信息 -->
+    <select id="selectProjectById" resultMap="NursingProjectResultMap">
+        SELECT
+            np.*,
+            u.real_name as caregiver_name
+        FROM nursing_projects np
+                 LEFT JOIN users u ON np.caregiver_id = u.id
+        WHERE np.id = #{id}
+    </select>
+
+    <!-- 根据项目名称查询护理项目 -->
+    <select id="selectProjectByName" resultMap="NursingProjectResultMap">
+        SELECT * FROM nursing_projects WHERE project_name = #{projectName}
+    </select>
+
+    <!-- 插入新护理项目 -->
+    <insert id="insertProject" parameterType="com.cqupt.yyzx.entity.NursingProject" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO nursing_projects (
+            project_name,
+            project_category,
+            description,
+            standard_duration,
+            caregiver_id,
+            frequency,
+            status,
+            created_at,
+            updated_at
+        )
+        VALUES (
+                   #{projectName},
+                   #{projectCategory},
+                   #{description},
+                   #{standardDuration},
+                   #{caregiverId},
+                   #{frequency},
+                   #{status},
+                   NOW(),
+                   NOW()
+               )
+    </insert>
+
+    <!-- 更新护理项目信息 -->
+    <update id="updateProject" parameterType="com.cqupt.yyzx.entity.NursingProject">
+        UPDATE nursing_projects
+        SET
+            project_name = #{projectName},
+            project_category = #{projectCategory},
+            description = #{description},
+            standard_duration = #{standardDuration},
+            caregiver_id = #{caregiverId},
+            frequency = #{frequency},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除护理项目 -->
+    <delete id="deleteProject">
+        DELETE FROM nursing_projects WHERE id = #{id}
+    </delete>
+
+    <!-- 批量删除护理项目 -->
+    <delete id="deleteProjects">
+        DELETE FROM nursing_projects WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 更新护理项目状态 -->
+    <update id="updateProjectStatus">
+        UPDATE nursing_projects
+        SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 获取所有护理项目分类 -->
+    <select id="selectAllCategories" resultType="String">
+        SELECT DISTINCT project_category
+        FROM nursing_projects
+        WHERE project_category IS NOT NULL
+        ORDER BY project_category
+    </select>
+
+    <!-- 获取护理项目统计信息 -->
+    <select id="getProjectStats" resultType="java.util.Map">
+        SELECT
+            status,
+            COUNT(*) as count
+        FROM nursing_projects
+        GROUP BY status
+    </select>
+
+    <!-- 根据分类查询护理项目 -->
+    <select id="selectProjectsByCategory" resultMap="NursingProjectResultMap">
+        SELECT
+            np.*,
+            u.real_name as caregiver_name
+        FROM nursing_projects np
+                 LEFT JOIN users u ON np.caregiver_id = u.id
+        WHERE np.project_category = #{category}
+          AND np.status = 1
+        ORDER BY np.project_name
+    </select>
+
+    <!-- 根据护理人员ID查询负责的项目 -->
+    <select id="selectProjectsByCaregiverId" resultMap="NursingProjectResultMap">
+        SELECT
+            np.*,
+            u.real_name as caregiver_name
+        FROM nursing_projects np
+                 LEFT JOIN users u ON np.caregiver_id = u.id
+        WHERE np.caregiver_id = #{caregiverId}
+        ORDER BY np.project_category, np.project_name
+    </select>
+
+    <!-- 检查项目名称是否已存在 -->
+    <select id="checkProjectNameExists" resultType="Integer">
+        SELECT COUNT(*) FROM nursing_projects
+        WHERE project_name = #{projectName}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 获取启用状态的护理项目 -->
+    <select id="selectActiveProjects" resultMap="NursingProjectResultMap">
+        SELECT
+            np.*,
+            u.real_name as caregiver_name
+        FROM nursing_projects np
+                 LEFT JOIN users u ON np.caregiver_id = u.id
+        WHERE np.status = 1
+        ORDER BY np.project_category, np.project_name
+    </select>
+
+    <!-- 获取护理项目的执行频率选项 -->
+    <select id="selectFrequencyOptions" resultType="String">
+        SELECT DISTINCT frequency
+        FROM nursing_projects
+        WHERE frequency IS NOT NULL
+        ORDER BY frequency
+    </select>
+
+    <!-- 根据护理等级推荐项目 -->
+    <select id="selectRecommendedProjectsByLevel" resultMap="NursingProjectResultMap">
+        SELECT
+        np.*,
+        u.real_name as caregiver_name
+        FROM nursing_projects np
+        LEFT JOIN users u ON np.caregiver_id = u.id
+        WHERE np.status = 1
+        <choose>
+            <when test="nursingLevel == '一级护理'">
+                AND np.project_category IN ('健康监护', '医疗护理', '护理照料', '功能训练')
+            </when>
+            <when test="nursingLevel == '二级护理'">
+                AND np.project_category IN ('健康监护', '生活照料', '护理照料', '心理关怀')
+            </when>
+            <when test="nursingLevel == '三级护理'">
+                AND np.project_category IN ('生活照料', '心理关怀', '营养管理')
+            </when>
+            <otherwise>
+                AND np.project_category IN ('生活照料', '心理关怀')
+            </otherwise>
+        </choose>
+        ORDER BY np.project_category, np.project_name
+    </select>
+
+</mapper>
