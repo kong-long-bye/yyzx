@@ -1,4 +1,5 @@
 // 统一响应格式
+export * from './customer'
 export interface ApiResponse<T = any> {
     code: number
     msg: string

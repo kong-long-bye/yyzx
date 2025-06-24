@@ -230,7 +230,7 @@ public class CustomerService {
      */
     public Map<String, Object> getCustomerStats() {
         List<Map<String, Object>> stats = customerMapper.getCustomerStats();
-
+        System.out.println(stats);
         Map<String, Object> result = new HashMap<>();
         int total = 0;
         int inService = 0;
@@ -238,7 +238,7 @@ public class CustomerService {
         int pendingAudit = 0;
 
         for (Map<String, Object> stat : stats) {
-            String status = (String) stat.get("status");
+            String status = stat.get("status").toString();
             Long count = (Long) stat.get("count");
             int countInt = count.intValue();
 

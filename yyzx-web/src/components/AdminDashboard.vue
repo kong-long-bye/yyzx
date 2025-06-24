@@ -171,15 +171,17 @@
               <BedManagement />
             </div>
             <div id="customer-checkin" class="tab-content">
-              <h2 class="section-title">客户入住登记功能开发中...</h2>
+
+              <CustomerCheckin />
             </div>
 
             <div id="customer-outing" class="tab-content">
-              <h2 class="section-title">外出登记功能开发中...</h2>
+              <CustomerOuting/>
             </div>
 
             <div id="customer-checkout" class="tab-content">
-              <h2 class="section-title">退住登记功能开发中...</h2>
+              <!-- 使用CustomerCheckout组件 -->
+              <CustomerCheckout />
             </div>
 
             <div id="nursing-level" class="tab-content">
@@ -222,7 +224,9 @@ import { useRouter, useRoute } from 'vue-router'
 import { bedApi } from '@/utils/bedApi'
 import type { User, BedStats, Room, Bed } from '@/types'
 import BedManagement from "@/components/BedManagement.vue";
-
+import CustomerCheckin from "@/components/CustomerCheckin.vue";
+import CustomerCheckout from "@/components/CustomerCheckout.vue";
+import CustomerOuting from "@/components/CustomerOuting.vue";
 // 组合式API设置
 const router = useRouter()
 const route = useRoute()
