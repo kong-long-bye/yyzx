@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqupt.yyzx.mapper.CustomerFocusMapper">
+
+    <!-- 客户关注结果映射 -->
+    <resultMap id="CustomerFocusResultMap" type="com.cqupt.yyzx.entity.CustomerFocus">
+        <id property="id" column="id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="caregiverId" column="caregiver_id"/>
+        <result property="focusLevel" column="focus_level"/>
+        <result property="focusReason" column="focus_reason"/>
+        <result property="focusContent" column="focus_content"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <!-- 关联字段 -->
+        <result property="customerName" column="customer_name"/>
+        <result property="caregiverName" column="caregiver_name"/>
+        <result property="bedNumber" column="bed_number"/>
+        <result property="roomNumber" column="room_number"/>
+    </resultMap>
+
+    <!-- 分页查询客户关注列表（包含客户和护理人员信息） -->
+    <select id="selectFocusListWithDetails" resultMap="CustomerFocusResultMap">
+        SELECT
+        cf.id,
+        cf.customer_id,
+        cf.caregiver_id,
+        cf.focus_level,
+        cf.focus_reason,
+        cf.focus_content,
+        cf.start_date,
+        cf.end_date,
+        cf.status,
+        cf.created_at,
+        cf.updated_at,
+        c.name as customer_name,
+        u.real_name as caregiver_name,
+        b.bed_number,
+        r.room_number
+        FROM customer_focus cf
+        JOIN customers c ON cf.customer_id = c.id
+        JOIN users u ON cf.caregiver_id = u.id
+        LEFT JOIN beds b ON c.bed_id = b.id
+        LEFT JOIN rooms r ON b.room_id = r.id
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                c.name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR cf.focus_reason LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR cf.focus_content LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR u.real_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR b.bed_number LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="focusLevel != null and focusLevel != ''">
+                AND cf.focus_level = #{focusLevel}
+            </if>
+            <if test="status != null">
+                AND cf.status = #{status}
+            </if>
+            <if test="caregiverId != null">
+                AND cf.caregiver_id = #{caregiverId}
+            </if>
+            <if test="startDate != null">
+                AND cf.start_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND cf.start_date &lt;= #{endDate}
+            </if>
+        </where>
+        ORDER BY cf.focus_level DESC, cf.created_at DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <!-- 查询客户关注总数 -->
+    <select id="countFocus" resultType="Integer">
+        SELECT COUNT(*)
+        FROM customer_focus cf
+        JOIN customers c ON cf.customer_id = c.id
+        JOIN users u ON cf.caregiver_id = u.id
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                c.name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR cf.focus_reason LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR cf.focus_content LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR u.real_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="focusLevel != null and focusLevel != ''">
+                AND cf.focus_level = #{focusLevel}
+            </if>
+            <if test="status != null">
+                AND cf.status = #{status}
+            </if>
+            <if test="caregiverId != null">
+                AND cf.caregiver_id = #{caregiverId}
+            </if>
+            <if test="startDate != null">
+                AND cf.start_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND cf.start_date &lt;= #{endDate}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据ID查询客户关注详细信息 -->
+    <select id="selectFocusById" resultMap="CustomerFocusResultMap">
+        SELECT
+            cf.*,
+            c.name as customer_name,
+            u.real_name as caregiver_name,
+            b.bed_number,
+            r.room_number
+        FROM customer_focus cf
+                 JOIN customers c ON cf.customer_id = c.id
+                 JOIN users u ON cf.caregiver_id = u.id
+                 LEFT JOIN beds b ON c.bed_id = b.id
+                 LEFT JOIN rooms r ON b.room_id = r.id
+        WHERE cf.id = #{id}
+    </select>
+
+    <!-- 插入新客户关注 -->
+    <insert id="insertFocus" parameterType="com.cqupt.yyzx.entity.CustomerFocus" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO customer_focus (
+            customer_id,
+            caregiver_id,
+            focus_level,
+            focus_reason,
+            focus_content,
+            start_date,
+            end_date,
+            status,
+            created_at,
+            updated_at
+        )
+        VALUES (
+                   #{customerId},
+                   #{caregiverId},
+                   #{focusLevel},
+                   #{focusReason},
+                   #{focusContent},
+                   #{startDate},
+                   #{endDate},
+                   #{status},
+                   NOW(),
+                   NOW()
+               )
+    </insert>
+
+    <!-- 更新客户关注信息 -->
+    <update id="updateFocus" parameterType="com.cqupt.yyzx.entity.CustomerFocus">
+        UPDATE customer_focus
+        SET
+            customer_id = #{customerId},
+            caregiver_id = #{caregiverId},
+            focus_level = #{focusLevel},
+            focus_reason = #{focusReason},
+            focus_content = #{focusContent},
+            start_date = #{startDate},
+            end_date = #{endDate},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除客户关注 -->
+    <delete id="deleteFocus">
+        DELETE FROM customer_focus WHERE id = #{id}
+    </delete>
+
+    <!-- 批量删除客户关注 -->
+    <delete id="deleteFocuses">
+        DELETE FROM customer_focus WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 更新客户关注状态 -->
+    <update id="updateFocusStatus">
+        UPDATE customer_focus
+        SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据护理人员ID查询关注客户列表 -->
+    <select id="selectFocusesByCaregiverId" resultMap="CustomerFocusResultMap">
+        SELECT
+        cf.*,
+        c.name as customer_name,
+        u.real_name as caregiver_name,
+        b.bed_number,
+        r.room_number
+        FROM customer_focus cf
+        JOIN customers c ON cf.customer_id = c.id
+        JOIN users u ON cf.caregiver_id = u.id
+        LEFT JOIN beds b ON c.bed_id = b.id
+        LEFT JOIN rooms r ON b.room_id = r.id
+        WHERE cf.caregiver_id = #{caregiverId}
+        <if test="status != null">
+            AND cf.status = #{status}
+        </if>
+        ORDER BY
+        CASE cf.focus_level
+        WHEN '高' THEN 1
+        WHEN '中' THEN 2
+        WHEN '低' THEN 3
+        ELSE 4
+        END,
+        cf.start_date DESC
+    </select>
+
+    <!-- 根据客户ID查询关注记录 -->
+    <select id="selectFocusesByCustomerId" resultMap="CustomerFocusResultMap">
+        SELECT
+            cf.*,
+            c.name as customer_name,
+            u.real_name as caregiver_name,
+            b.bed_number,
+            r.room_number
+        FROM customer_focus cf
+                 JOIN customers c ON cf.customer_id = c.id
+                 JOIN users u ON cf.caregiver_id = u.id
+                 LEFT JOIN beds b ON c.bed_id = b.id
+                 LEFT JOIN rooms r ON b.room_id = r.id
+        WHERE cf.customer_id = #{customerId}
+        ORDER BY cf.created_at DESC
+    </select>
+
+    <!-- 检查客户是否已被关注 -->
+    <select id="selectActiveFocusByCustomerAndCaregiver" resultMap="CustomerFocusResultMap">
+        SELECT * FROM customer_focus
+        WHERE customer_id = #{customerId}
+          AND caregiver_id = #{caregiverId}
+          AND status = 1
+            LIMIT 1
+    </select>
+
+    <!-- 获取关注统计信息 -->
+    <select id="getFocusStats" resultType="java.util.Map">
+        SELECT
+            status,
+            COUNT(*) as count
+        FROM customer_focus
+        WHERE caregiver_id = #{caregiverId}
+          AND start_date BETWEEN #{startDate} AND #{endDate}
+        GROUP BY status
+    </select>
+
+    <!-- 查询即将到期的关注 -->
+    <select id="selectExpiringFocuses" resultMap="CustomerFocusResultMap">
+        SELECT
+        cf.*,
+        c.name as customer_name,
+        u.real_name as caregiver_name,
+        b.bed_number,
+        r.room_number
+        FROM customer_focus cf
+        JOIN customers c ON cf.customer_id = c.id
+        JOIN users u ON cf.caregiver_id = u.id
+        LEFT JOIN beds b ON c.bed_id = b.id
+        LEFT JOIN rooms r ON b.room_id = r.id
+        WHERE cf.status = 1
+        AND cf.end_date IS NOT NULL
+        AND cf.end_date &lt;= DATE_ADD(CURDATE(), INTERVAL #{days} DAY)
+        <if test="caregiverId != null">
+            AND cf.caregiver_id = #{caregiverId}
+        </if>
+        ORDER BY cf.end_date ASC
+    </select>
+
+    <!-- 查询高关注级别客户 -->
+    <select id="selectHighPriorityFocuses" resultMap="CustomerFocusResultMap">
+        SELECT
+            cf.*,
+            c.name as customer_name,
+            u.real_name as caregiver_name,
+            b.bed_number,
+            r.room_number
+        FROM customer_focus cf
+                 JOIN customers c ON cf.customer_id = c.id
+                 JOIN users u ON cf.caregiver_id = u.id
+                 LEFT JOIN beds b ON c.bed_id = b.id
+                 LEFT JOIN rooms r ON b.room_id = r.id
+        WHERE cf.caregiver_id = #{caregiverId}
+          AND cf.status = 1
+          AND cf.focus_level = '高'
+        ORDER BY cf.start_date DESC
+    </select>
+
+    <!-- 根据关注级别统计 -->
+    <select id="getFocusStatsByLevel" resultType="java.util.Map">
+        SELECT
+            focus_level,
+            COUNT(*) as count
+        FROM customer_focus
+        WHERE caregiver_id = #{caregiverId}
+          AND status = 1
+        GROUP BY focus_level
+    </select>
+
+    <!-- 批量更新关注状态 -->
+    <update id="batchUpdateFocusStatus">
+        UPDATE customer_focus
+        SET status = #{status}, updated_at = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 终止护理人员的所有关注 -->
+    <update id="terminateCaregiverFocuses">
+        UPDATE customer_focus
+        SET status = 0, end_date = CURDATE(), updated_at = NOW()
+        WHERE caregiver_id = #{caregiverId}
+          AND status = 1
+    </update>
+
+    <!-- 获取关注历史记录 -->
+    <select id="selectFocusHistory" resultMap="CustomerFocusResultMap">
+        SELECT
+        cf.*,
+        c.name as customer_name,
+        u.real_name as caregiver_name,
+        b.bed_number,
+        r.room_number
+        FROM customer_focus cf
+        JOIN customers c ON cf.customer_id = c.id
+        JOIN users u ON cf.caregiver_id = u.id
+        LEFT JOIN beds b ON c.bed_id = b.id
+        LEFT JOIN rooms r ON b.room_id = r.id
+        WHERE cf.customer_id = #{customerId}
+        ORDER BY cf.created_at DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+</mapper>
