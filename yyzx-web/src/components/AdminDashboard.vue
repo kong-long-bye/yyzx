@@ -209,7 +209,7 @@
             </div>
 
             <div id="user-management" class="tab-content">
-              <h2 class="section-title">基础数据维护功能开发中...</h2>
+              <UserManagement/>
             </div>
           </div>
         </div>
@@ -227,6 +227,7 @@ import BedManagement from "@/components/BedManagement.vue";
 import CustomerCheckin from "@/components/CustomerCheckin.vue";
 import CustomerCheckout from "@/components/CustomerCheckout.vue";
 import CustomerOuting from "@/components/CustomerOuting.vue";
+import UserManagement from "@/components/UserManagement.vue";
 // 组合式API设置
 const router = useRouter()
 const route = useRoute()

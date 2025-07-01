@@ -1,7 +1,5 @@
 package com.cqupt.yyzx.entity;
 
-
-
 import java.time.LocalDateTime;
 
 /**
@@ -19,6 +17,9 @@ public class User {
     private LocalDateTime lastLoginTime;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // 关联字段
+    private String roleName; // 角色名称
 
     // 构造函数
     public User() {}
@@ -115,5 +116,28 @@ public class User {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getRoleName() {
+        return roleName;
+    }
+
+    public void setRoleName(String roleName) {
+        this.roleName = roleName;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", realName='" + realName + '\'' +
+                ", phone='" + phone + '\'' +
+                ", email='" + email + '\'' +
+                ", roleId=" + roleId +
+                ", roleName='" + roleName + '\'' +
+                ", status=" + status +
+                ", lastLoginTime=" + lastLoginTime +
+                '}';
     }
 }

@@ -2,7 +2,24 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cqupt.yyzx.mapper.UserMapper">
 
-    <!-- 用户结果映射 -->
+    <!-- 用户结果映射（包含角色信息） -->
+    <resultMap id="UserWithRoleResultMap" type="com.cqupt.yyzx.entity.User">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="realName" column="real_name"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="roleId" column="role_id"/>
+        <result property="status" column="status"/>
+        <result property="lastLoginTime" column="last_login_time"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <!-- 角色信息 -->
+        <result property="roleName" column="role_name"/>
+    </resultMap>
+
+    <!-- 基础用户结果映射 -->
     <resultMap id="UserResultMap" type="com.cqupt.yyzx.entity.User">
         <id property="id" column="id"/>
         <result property="username" column="username"/>
@@ -40,6 +57,185 @@
         UPDATE users
         SET last_login_time = NOW(), updated_at = NOW()
         WHERE id = #{id}
+    </update>
+
+    <!-- 分页查询用户列表（包含角色信息） -->
+    <select id="selectUserListWithRole" resultMap="UserWithRoleResultMap">
+        SELECT
+        u.id,
+        u.username,
+        u.real_name,
+        u.phone,
+        u.email,
+        u.role_id,
+        u.status,
+        u.last_login_time,
+        u.created_at,
+        u.updated_at,
+        r.role_name
+        FROM users u
+        LEFT JOIN roles r ON u.role_id = r.id
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                u.username LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR u.real_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR u.phone LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR u.email LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR r.role_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="roleId != null">
+                AND u.role_id = #{roleId}
+            </if>
+            <if test="status != null">
+                AND u.status = #{status}
+            </if>
+        </where>
+        ORDER BY u.created_at DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <!-- 查询用户总数 -->
+    <select id="countUsers" resultType="Integer">
+        SELECT COUNT(*)
+        FROM users u
+        LEFT JOIN roles r ON u.role_id = r.id
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                u.username LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR u.real_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR u.phone LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR u.email LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR r.role_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="roleId != null">
+                AND u.role_id = #{roleId}
+            </if>
+            <if test="status != null">
+                AND u.status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据ID查询用户详细信息 -->
+    <select id="selectUserById" resultMap="UserWithRoleResultMap">
+        SELECT
+            u.*,
+            r.role_name
+        FROM users u
+                 LEFT JOIN roles r ON u.role_id = r.id
+        WHERE u.id = #{id}
+    </select>
+
+    <!-- 更新用户信息 -->
+    <update id="updateUser" parameterType="com.cqupt.yyzx.entity.User">
+        UPDATE users
+        <set>
+            username = #{username},
+            real_name = #{realName},
+            phone = #{phone},
+            email = #{email},
+            role_id = #{roleId},
+            status = #{status},
+            updated_at = NOW()
+            <if test="password != null and password != ''">
+                , password = #{password}
+            </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除用户 -->
+    <delete id="deleteUser">
+        DELETE FROM users WHERE id = #{id}
+    </delete>
+
+    <!-- 批量删除用户 -->
+    <delete id="deleteUsers">
+        DELETE FROM users WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 更新用户状态 -->
+    <update id="updateUserStatus">
+        UPDATE users
+        SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 重置用户密码 -->
+    <update id="resetPassword">
+        UPDATE users
+        SET password = #{password}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 检查用户名是否已存在 -->
+    <select id="checkUsernameExists" resultType="Integer">
+        SELECT COUNT(*) FROM users
+        WHERE username = #{username}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 检查邮箱是否已存在 -->
+    <select id="checkEmailExists" resultType="Integer">
+        SELECT COUNT(*) FROM users
+        WHERE email = #{email}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 获取用户统计信息 -->
+    <select id="getUserStats" resultType="java.util.Map">
+        SELECT
+            status,
+            COUNT(*) as count
+        FROM users
+        GROUP BY status
+    </select>
+
+    <!-- 查询最近注册的用户 -->
+    <select id="selectRecentUsers" resultMap="UserWithRoleResultMap">
+        SELECT
+        u.*,
+        r.role_name
+        FROM users u
+        LEFT JOIN roles r ON u.role_id = r.id
+        ORDER BY u.created_at DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 根据角色ID查询用户列表 -->
+    <select id="selectUsersByRoleId" resultMap="UserWithRoleResultMap">
+        SELECT
+            u.*,
+            r.role_name
+        FROM users u
+                 LEFT JOIN roles r ON u.role_id = r.id
+        WHERE u.role_id = #{roleId}
+        ORDER BY u.created_at DESC
+    </select>
+
+    <!-- 批量更新用户状态 -->
+    <update id="batchUpdateUserStatus">
+        UPDATE users
+        SET status = #{status}, updated_at = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
     </update>
 
 </mapper>

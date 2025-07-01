@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqupt.yyzx.mapper.RoleMapper">
+
+    <!-- 角色结果映射 -->
+    <resultMap id="RoleResultMap" type="com.cqupt.yyzx.entity.Role">
+        <id property="id" column="id"/>
+        <result property="roleName" column="role_name"/>
+        <result property="roleCode" column="role_code"/>
+        <result property="description" column="description"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 分页查询角色列表 -->
+    <select id="selectRoleList" resultMap="RoleResultMap">
+        SELECT * FROM roles
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                role_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR role_code LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR description LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <!-- 查询角色总数 -->
+    <select id="countRoles" resultType="Integer">
+        SELECT COUNT(*) FROM roles
+        <where>
+            <if test="searchKeyword != null and searchKeyword != ''">
+                AND (
+                role_name LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR role_code LIKE CONCAT('%', #{searchKeyword}, '%')
+                OR description LIKE CONCAT('%', #{searchKeyword}, '%')
+                )
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据ID查询角色详细信息 -->
+    <select id="selectRoleById" resultMap="RoleResultMap">
+        SELECT * FROM roles WHERE id = #{id}
+    </select>
+
+    <!-- 根据角色编码查询角色 -->
+    <select id="selectRoleByCode" resultMap="RoleResultMap">
+        SELECT * FROM roles WHERE role_code = #{roleCode}
+    </select>
+
+    <!-- 插入新角色 -->
+    <insert id="insertRole" parameterType="com.cqupt.yyzx.entity.Role" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO roles (role_name, role_code, description, status, created_at, updated_at)
+        VALUES (#{roleName}, #{roleCode}, #{description}, #{status}, NOW(), NOW())
+    </insert>
+
+    <!-- 更新角色信息 -->
+    <update id="updateRole" parameterType="com.cqupt.yyzx.entity.Role">
+        UPDATE roles
+        SET
+            role_name = #{roleName},
+            role_code = #{roleCode},
+            description = #{description},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除角色 -->
+    <delete id="deleteRole">
+        DELETE FROM roles WHERE id = #{id}
+    </delete>
+
+    <!-- 批量删除角色 -->
+    <delete id="deleteRoles">
+        DELETE FROM roles WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 更新角色状态 -->
+    <update id="updateRoleStatus">
+        UPDATE roles
+        SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 获取所有启用的角色列表 -->
+    <select id="selectActiveRoles" resultMap="RoleResultMap">
+        SELECT * FROM roles
+        WHERE status = 1
+        ORDER BY id
+    </select>
+
+    <!-- 检查角色编码是否已存在 -->
+    <select id="checkRoleCodeExists" resultType="Integer">
+        SELECT COUNT(*) FROM roles
+        WHERE role_code = #{roleCode}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 检查角色名称是否已存在 -->
+    <select id="checkRoleNameExists" resultType="Integer">
+        SELECT COUNT(*) FROM roles
+        WHERE role_name = #{roleName}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 获取角色统计信息 -->
+    <select id="getRoleStats" resultType="java.util.Map">
+        SELECT
+            status,
+            COUNT(*) as count
+        FROM roles
+        GROUP BY status
+    </select>
+
+    <!-- 检查角色是否有关联用户 -->
+    <select id="checkRoleHasUsers" resultType="Integer">
+        SELECT COUNT(*) FROM users
+        WHERE role_id = #{roleId}
+    </select>
+
+</mapper>
