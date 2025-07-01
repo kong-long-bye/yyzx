@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqupt.yyzx.mapper.FoodMapper">
+
+    <!-- 食品结果映射 -->
+    <resultMap id="FoodResultMap" type="com.cqupt.yyzx.entity.Food">
+        <id property="id" column="id"/>
+        <result property="foodName" column="food_name"/>
+        <result property="foodCategory" column="food_category"/>
+        <result property="unit" column="unit"/>
+        <result property="price" column="price"/>
+        <result property="caloriesPerUnit" column="calories_per_unit"/>
+        <result property="proteinContent" column="protein_content"/>
+        <result property="fatContent" column="fat_content"/>
+        <result property="carbContent" column="carb_content"/>
+        <result property="allergenInfo" column="allergen_info"/>
+        <result property="storageRequirements" column="storage_requirements"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 分页查询食品列表 -->
+    <select id="selectFoodList" resultMap="FoodResultMap">
+        SELECT * FROM foods
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                food_name LIKE CONCAT('%', #{keyword}, '%')
+                OR food_category LIKE CONCAT('%', #{keyword}, '%')
+                OR allergen_info LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="category != null and category != ''">
+                AND food_category = #{category}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <!-- 查询食品总数 -->
+    <select id="countFoods" resultType="Integer">
+        SELECT COUNT(*) FROM foods
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                food_name LIKE CONCAT('%', #{keyword}, '%')
+                OR food_category LIKE CONCAT('%', #{keyword}, '%')
+                OR allergen_info LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="category != null and category != ''">
+                AND food_category = #{category}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据ID查询食品详细信息 -->
+    <select id="selectFoodById" resultMap="FoodResultMap">
+        SELECT * FROM foods WHERE id = #{id}
+    </select>
+
+    <!-- 根据名称查询食品 -->
+    <select id="selectFoodByName" resultMap="FoodResultMap">
+        SELECT * FROM foods WHERE food_name = #{foodName}
+    </select>
+
+    <!-- 插入新食品 -->
+    <insert id="insertFood" parameterType="com.cqupt.yyzx.entity.Food" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO foods (
+            food_name,
+            food_category,
+            unit,
+            price,
+            calories_per_unit,
+            protein_content,
+            fat_content,
+            carb_content,
+            allergen_info,
+            storage_requirements,
+            status,
+            created_at,
+            updated_at
+        )
+        VALUES (
+                   #{foodName},
+                   #{foodCategory},
+                   #{unit},
+                   #{price},
+                   #{caloriesPerUnit},
+                   #{proteinContent},
+                   #{fatContent},
+                   #{carbContent},
+                   #{allergenInfo},
+                   #{storageRequirements},
+                   #{status},
+                   NOW(),
+                   NOW()
+               )
+    </insert>
+
+    <!-- 更新食品信息 -->
+    <update id="updateFood" parameterType="com.cqupt.yyzx.entity.Food">
+        UPDATE foods
+        SET
+            food_name = #{foodName},
+            food_category = #{foodCategory},
+            unit = #{unit},
+            price = #{price},
+            calories_per_unit = #{caloriesPerUnit},
+            protein_content = #{proteinContent},
+            fat_content = #{fatContent},
+            carb_content = #{carbContent},
+            allergen_info = #{allergenInfo},
+            storage_requirements = #{storageRequirements},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除食品 -->
+    <delete id="deleteFood">
+        DELETE FROM foods WHERE id = #{id}
+    </delete>
+
+    <!-- 批量删除食品 -->
+    <delete id="deleteFoods">
+        DELETE FROM foods WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 更新食品状态 -->
+    <update id="updateFoodStatus">
+        UPDATE foods
+        SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 获取所有食品分类 -->
+    <select id="selectAllCategories" resultType="String">
+        SELECT DISTINCT food_category
+        FROM foods
+        WHERE food_category IS NOT NULL
+        ORDER BY food_category
+    </select>
+
+    <!-- 根据分类查询食品 -->
+    <select id="selectFoodsByCategory" resultMap="FoodResultMap">
+        SELECT * FROM foods
+        WHERE food_category = #{category}
+          AND status = 1
+        ORDER BY food_name
+    </select>
+
+    <!-- 获取启用状态的食品 -->
+    <select id="selectActiveFoods" resultMap="FoodResultMap">
+        SELECT * FROM foods
+        WHERE status = 1
+        ORDER BY food_category, food_name
+    </select>
+
+    <!-- 检查食品名称是否已存在 -->
+    <select id="checkFoodNameExists" resultType="Integer">
+        SELECT COUNT(*) FROM foods
+        WHERE food_name = #{foodName}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 根据关键字搜索食品 -->
+    <select id="searchFoodsByKeyword" resultMap="FoodResultMap">
+        SELECT * FROM foods
+        WHERE status = 1
+        AND (
+        food_name LIKE CONCAT('%', #{keyword}, '%')
+        OR food_category LIKE CONCAT('%', #{keyword}, '%')
+        )
+        ORDER BY food_name
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 获取食品统计信息 -->
+    <select id="getFoodStats" resultType="java.util.Map">
+        SELECT
+            status,
+            COUNT(*) as count
+        FROM foods
+        GROUP BY status
+    </select>
+
+    <!-- 根据ID列表查询食品 -->
+    <select id="selectFoodsByIds" resultMap="FoodResultMap">
+        SELECT * FROM foods
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+
+</mapper>

@@ -12,6 +12,12 @@ spring:
     username: root
     password: 123456
 
+  # 删除之前的 springfox 配置，添加以下配置
+
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+
   # Jackson??
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss

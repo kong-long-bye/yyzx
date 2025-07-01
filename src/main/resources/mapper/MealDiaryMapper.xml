@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqupt.yyzx.mapper.MealDiaryMapper">
+
+    <!-- 膳食日记结果映射 -->
+    <resultMap id="MealDiaryResultMap" type="com.cqupt.yyzx.entity.MealDiary">
+        <id property="id" column="id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="mealDate" column="meal_date"/>
+        <result property="mealType" column="meal_type"/>
+        <result property="foodId" column="food_id"/>
+        <result property="quantity" column="quantity"/>
+        <result property="notes" column="notes"/>
+        <result property="caregiverId" column="caregiver_id"/>
+        <result property="createdAt" column="created_at"/>
+        <!-- 关联字段 -->
+        <result property="customerName" column="customer_name"/>
+        <result property="foodName" column="food_name"/>
+        <result property="foodUnit" column="food_unit"/>
+        <result property="foodPrice" column="food_price"/>
+        <result property="foodCalories" column="food_calories"/>
+        <result property="foodProtein" column="food_protein"/>
+        <result property="foodFat" column="food_fat"/>
+        <result property="foodCarbs" column="food_carbs"/>
+        <result property="caregiverName" column="caregiver_name"/>
+        <!-- 计算字段 -->
+        <result property="totalPrice" column="total_price"/>
+        <result property="totalCalories" column="total_calories"/>
+        <result property="totalProtein" column="total_protein"/>
+        <result property="totalFat" column="total_fat"/>
+        <result property="totalCarbs" column="total_carbs"/>
+    </resultMap>
+
+    <!-- 分页查询膳食记录列表（包含关联信息） -->
+    <select id="selectMealDiaryListWithDetails" resultMap="MealDiaryResultMap">
+        SELECT
+        md.id,
+        md.customer_id,
+        md.meal_date,
+        md.meal_type,
+        md.food_id,
+        md.quantity,
+        md.notes,
+        md.caregiver_id,
+        md.created_at,
+        c.name as customer_name,
+        f.food_name,
+        f.unit as food_unit,
+        f.price as food_price,
+        f.calories_per_unit as food_calories,
+        f.protein_content as food_protein,
+        f.fat_content as food_fat,
+        f.carb_content as food_carbs,
+        u.real_name as caregiver_name,
+        (md.quantity * f.price) as total_price,
+        (md.quantity * f.calories_per_unit) as total_calories,
+        (md.quantity * f.protein_content) as total_protein,
+        (md.quantity * f.fat_content) as total_fat,
+        (md.quantity * f.carb_content) as total_carbs
+        FROM meal_diaries md
+        JOIN customers c ON md.customer_id = c.id
+        JOIN foods f ON md.food_id = f.id
+        LEFT JOIN users u ON md.caregiver_id = u.id
+        <where>
+            <if test="customerId != null">
+                AND md.customer_id = #{customerId}
+            </if>
+            <if test="mealDate != null">
+                AND md.meal_date = #{mealDate}
+            </if>
+            <if test="mealType != null and mealType != ''">
+                AND md.meal_type = #{mealType}
+            </if>
+            <if test="startDate != null">
+                AND md.meal_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND md.meal_date &lt;= #{endDate}
+            </if>
+        </where>
+        ORDER BY md.meal_date DESC, md.created_at DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <!-- 查询膳食记录总数 -->
+    <select id="countMealDiaries" resultType="Integer">
+        SELECT COUNT(*)
+        FROM meal_diaries md
+        JOIN customers c ON md.customer_id = c.id
+        JOIN foods f ON md.food_id = f.id
+        <where>
+            <if test="customerId != null">
+                AND md.customer_id = #{customerId}
+            </if>
+            <if test="mealDate != null">
+                AND md.meal_date = #{mealDate}
+            </if>
+            <if test="mealType != null and mealType != ''">
+                AND md.meal_type = #{mealType}
+            </if>
+            <if test="startDate != null">
+                AND md.meal_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND md.meal_date &lt;= #{endDate}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据ID查询膳食记录详细信息 -->
+    <select id="selectMealDiaryById" resultMap="MealDiaryResultMap">
+        SELECT
+            md.*,
+            c.name as customer_name,
+            f.food_name,
+            f.unit as food_unit,
+            f.price as food_price,
+            f.calories_per_unit as food_calories,
+            u.real_name as caregiver_name,
+            (md.quantity * f.price) as total_price,
+            (md.quantity * f.calories_per_unit) as total_calories
+        FROM meal_diaries md
+                 JOIN customers c ON md.customer_id = c.id
+                 JOIN foods f ON md.food_id = f.id
+                 LEFT JOIN users u ON md.caregiver_id = u.id
+        WHERE md.id = #{id}
+    </select>
+
+    <!-- 插入新膳食记录 -->
+    <insert id="insertMealDiary" parameterType="com.cqupt.yyzx.entity.MealDiary" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO meal_diaries (
+            customer_id,
+            meal_date,
+            meal_type,
+            food_id,
+            quantity,
+            notes,
+            caregiver_id,
+            created_at
+        )
+        VALUES (
+                   #{customerId},
+                   #{mealDate},
+                   #{mealType},
+                   #{foodId},
+                   #{quantity},
+                   #{notes},
+                   #{caregiverId},
+                   NOW()
+               )
+    </insert>
+
+    <!-- 更新膳食记录信息 -->
+    <update id="updateMealDiary" parameterType="com.cqupt.yyzx.entity.MealDiary">
+        UPDATE meal_diaries
+        SET
+            customer_id = #{customerId},
+            meal_date = #{mealDate},
+            meal_type = #{mealType},
+            food_id = #{foodId},
+            quantity = #{quantity},
+            notes = #{notes},
+            caregiver_id = #{caregiverId}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除膳食记录 -->
+    <delete id="deleteMealDiary">
+        DELETE FROM meal_diaries WHERE id = #{id}
+    </delete>
+
+    <!-- 批量删除膳食记录 -->
+    <delete id="deleteMealDiaries">
+        DELETE FROM meal_diaries WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 根据客户ID和日期查询当日膳食记录 -->
+    <select id="selectTodayMealDiaries" resultMap="MealDiaryResultMap">
+        SELECT
+            md.*,
+            c.name as customer_name,
+            f.food_name,
+            f.unit as food_unit,
+            f.price as food_price,
+            f.calories_per_unit as food_calories,
+            u.real_name as caregiver_name,
+            (md.quantity * f.price) as total_price,
+            (md.quantity * f.calories_per_unit) as total_calories
+        FROM meal_diaries md
+                 JOIN customers c ON md.customer_id = c.id
+                 JOIN foods f ON md.food_id = f.id
+                 LEFT JOIN users u ON md.caregiver_id = u.id
+        WHERE md.customer_id = #{customerId}
+          AND md.meal_date = #{mealDate}
+        ORDER BY
+            CASE md.meal_type
+                WHEN '早餐' THEN 1
+                WHEN '午餐' THEN 2
+                WHEN '晚餐' THEN 3
+                WHEN '加餐' THEN 4
+                ELSE 5
+                END,
+            md.created_at
+    </select>
+
+    <!-- 根据客户ID查询指定时间段膳食记录 -->
+    <select id="selectMealDiariesByPeriod" resultMap="MealDiaryResultMap">
+        SELECT
+            md.*,
+            c.name as customer_name,
+            f.food_name,
+            u.real_name as caregiver_name,
+            (md.quantity * f.price) as total_price,
+            (md.quantity * f.calories_per_unit) as total_calories
+        FROM meal_diaries md
+                 JOIN customers c ON md.customer_id = c.id
+                 JOIN foods f ON md.food_id = f.id
+                 LEFT JOIN users u ON md.caregiver_id = u.id
+        WHERE md.customer_id = #{customerId}
+          AND md.meal_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY md.meal_date DESC, md.created_at DESC
+    </select>
+
+    <!-- 获取客户营养统计 -->
+    <select id="getNutritionStats" resultType="java.util.Map">
+        SELECT
+            SUM(md.quantity * f.calories_per_unit) as total_calories,
+            SUM(md.quantity * f.protein_content) as total_protein,
+            SUM(md.quantity * f.fat_content) as total_fat,
+            SUM(md.quantity * f.carb_content) as total_carbs
+        FROM meal_diaries md
+                 JOIN foods f ON md.food_id = f.id
+        WHERE md.customer_id = #{customerId}
+          AND md.meal_date BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <!-- 获取客户费用统计 -->
+    <select id="getCostStats" resultType="java.util.Map">
+        SELECT
+            SUM(md.quantity * f.price) as total_cost,
+            COUNT(md.id) as total_records
+        FROM meal_diaries md
+                 JOIN foods f ON md.food_id = f.id
+        WHERE md.customer_id = #{customerId}
+          AND md.meal_date BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <!-- 根据客户ID查询最近的膳食记录 -->
+    <select id="selectRecentMealDiaries" resultMap="MealDiaryResultMap">
+        SELECT
+        md.*,
+        f.food_name,
+        (md.quantity * f.price) as total_price,
+        (md.quantity * f.calories_per_unit) as total_calories
+        FROM meal_diaries md
+        JOIN foods f ON md.food_id = f.id
+        WHERE md.customer_id = #{customerId}
+        ORDER BY md.meal_date DESC, md.created_at DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 检查重复记录 -->
+    <select id="checkDuplicateRecord" resultType="Integer">
+        SELECT COUNT(*)
+        FROM meal_diaries
+        WHERE customer_id = #{customerId}
+          AND meal_date = #{mealDate}
+          AND meal_type = #{mealType}
+          AND food_id = #{foodId}
+    </select>
+
+    <!-- 获取膳食类型统计 -->
+    <select id="getMealTypeStats" resultType="java.util.Map">
+        SELECT
+            meal_type,
+            COUNT(*) as count,
+            SUM(md.quantity * f.calories_per_unit) as total_calories,
+            SUM(md.quantity * f.price) as total_cost
+        FROM meal_diaries md
+            JOIN foods f ON md.food_id = f.id
+        WHERE md.customer_id = #{customerId}
+          AND md.meal_date BETWEEN #{startDate} AND #{endDate}
+        GROUP BY meal_type
+        ORDER BY
+            CASE meal_type
+            WHEN '早餐' THEN 1
+            WHEN '午餐' THEN 2
+            WHEN '晚餐' THEN 3
+            WHEN '加餐' THEN 4
+            ELSE 5
+        END
+    </select>
+
+    <!-- 获取热门食品统计 -->
+    <select id="getPopularFoodsStats" resultType="java.util.Map">
+        SELECT
+        f.id as food_id,
+        f.food_name,
+        f.food_category,
+        COUNT(md.id) as order_count,
+        SUM(md.quantity) as total_quantity,
+        SUM(md.quantity * f.price) as total_revenue
+        FROM meal_diaries md
+        JOIN foods f ON md.food_id = f.id
+        WHERE md.meal_date BETWEEN #{startDate} AND #{endDate}
+        GROUP BY f.id, f.food_name, f.food_category
+        ORDER BY order_count DESC, total_quantity DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 批量插入膳食记录 -->
+    <insert id="batchInsertMealDiaries" parameterType="java.util.List">
+        INSERT INTO meal_diaries (
+        customer_id,
+        meal_date,
+        meal_type,
+        food_id,
+        quantity,
+        notes,
+        caregiver_id,
+        created_at
+        )
+        VALUES
+        <foreach collection="records" item="record" separator=",">
+            (
+            #{record.customerId},
+            #{record.mealDate},
+            #{record.mealType},
+            #{record.foodId},
+            #{record.quantity},
+            #{record.notes},
+            #{record.caregiverId},
+            NOW()
+            )
+        </foreach>
+    </insert>
+
+</mapper>
