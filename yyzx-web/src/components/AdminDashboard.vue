@@ -498,6 +498,9 @@ body {
 /* 侧边栏样式 */
 .sidebar {
   width: 250px;
+  min-width: 250px;  /* 添加最小宽度 */
+  max-width: 250px;  /* 添加最大宽度 */
+  flex-shrink: 0;    /* 防止收缩 */
   background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
   color: white;
   overflow-y: auto;
@@ -900,19 +903,5 @@ body {
   }
 }
 
-@media (max-width: 480px) {
-  .bed-item {
-    font-size: 10px;
-    padding: 6px;
-    min-height: 45px;
-  }
 
-  .room-number {
-    font-size: 14px;
-  }
-
-  .stat-number {
-    font-size: 24px;
-  }
-}
 </style>

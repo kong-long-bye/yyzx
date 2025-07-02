@@ -1139,41 +1139,7 @@ watch(selectedUsers, () => {
   font-size: 14px;
 }
 
-@media (max-width: 768px) {
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
 
-  .search-filters {
-    flex-direction: column;
-  }
-
-  .stats-section {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  }
-
-  .user-table {
-    font-size: 12px;
-  }
-
-  .user-table th,
-  .user-table td {
-    padding: 8px 6px;
-  }
-
-  .actions {
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .actions .edit-btn,
-  .actions .reset-btn,
-  .actions .delete-btn {
-    padding: 3px 6px;
-    font-size: 11px;
-  }
-}
 </style>
 
 <style>

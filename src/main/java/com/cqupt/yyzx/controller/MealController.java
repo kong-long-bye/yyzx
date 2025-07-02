@@ -5,7 +5,6 @@ import com.cqupt.yyzx.entity.Food;
 import com.cqupt.yyzx.entity.MealDiary;
 import com.cqupt.yyzx.service.FoodService;
 import com.cqupt.yyzx.service.MealDiaryService;
-import com.cqupt.yyzx.service.NutritionAnalysisService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
@@ -29,8 +28,8 @@ public class MealController {
     @Autowired
     private MealDiaryService mealDiaryService;
 
-    @Autowired
-    private NutritionAnalysisService nutritionAnalysisService;
+//    @Autowired
+//    private NutritionAnalysisService nutritionAnalysisService;
 
     // ==================== 食品管理 ====================
 
@@ -340,66 +339,66 @@ public class MealController {
         }
     }
 
-    // ==================== 安全检查 ====================
-
-    /**
-     * 检查过敏源
-     */
-    @PostMapping("/safety-check")
-    public Result<Map<String, Object>> performSafetyCheck(@RequestBody Map<String, Object> checkData) {
-        try {
-            Integer customerId = (Integer) checkData.get("customerId");
-            @SuppressWarnings("unchecked")
-            List<Integer> foodIds = (List<Integer>) checkData.get("foodIds");
-
-            if (customerId == null || foodIds == null || foodIds.isEmpty()) {
-                return Result.error("客户ID和食品列表不能为空");
-            }
-
-            Map<String, Object> result = nutritionAnalysisService.performSafetyCheck(customerId, foodIds);
-            return Result.success(result);
-        } catch (Exception e) {
-            return Result.error("安全检查失败：" + e.getMessage());
-        }
-    }
-
-    /**
-     * 计算食物营养价值
-     */
-    @PostMapping("/calculate-nutrition")
-    public Result<Map<String, Object>> calculateNutrition(@RequestBody Map<String, Object> data) {
-        try {
-            Integer foodId = (Integer) data.get("foodId");
-            Double quantity = ((Number) data.get("quantity")).doubleValue();
-
-            if (foodId == null || quantity == null || quantity <= 0) {
-                return Result.error("食品ID和数量不能为空且必须大于0");
-            }
-
-            Map<String, Object> nutrition = nutritionAnalysisService.calculateNutrition(foodId, quantity);
-            return Result.success(nutrition);
-        } catch (Exception e) {
-            return Result.error("计算营养价值失败：" + e.getMessage());
-        }
-    }
-
-    /**
-     * 获取食物搭配建议
-     */
-    @PostMapping("/food-suggestions")
-    public Result<List<String>> getFoodCombinationSuggestions(@RequestBody Map<String, Object> data) {
-        try {
-            @SuppressWarnings("unchecked")
-            List<Integer> foodIds = (List<Integer>) data.get("foodIds");
-
-            if (foodIds == null || foodIds.isEmpty()) {
-                return Result.error("食品列表不能为空");
-            }
-
-            List<String> suggestions = nutritionAnalysisService.getFoodCombinationSuggestions(foodIds);
-            return Result.success(suggestions);
-        } catch (Exception e) {
-            return Result.error("获取搭配建议失败：" + e.getMessage());
-        }
-    }
+//    // ==================== 安全检查 ====================
+//
+//    /**
+//     * 检查过敏源
+//     */
+//    @PostMapping("/safety-check")
+//    public Result<Map<String, Object>> performSafetyCheck(@RequestBody Map<String, Object> checkData) {
+//        try {
+//            Integer customerId = (Integer) checkData.get("customerId");
+//            @SuppressWarnings("unchecked")
+//            List<Integer> foodIds = (List<Integer>) checkData.get("foodIds");
+//
+//            if (customerId == null || foodIds == null || foodIds.isEmpty()) {
+//                return Result.error("客户ID和食品列表不能为空");
+//            }
+//
+//            Map<String, Object> result = nutritionAnalysisService.performSafetyCheck(customerId, foodIds);
+//            return Result.success(result);
+//        } catch (Exception e) {
+//            return Result.error("安全检查失败：" + e.getMessage());
+//        }
+//    }
+//
+//    /**
+//     * 计算食物营养价值
+//     */
+//    @PostMapping("/calculate-nutrition")
+//    public Result<Map<String, Object>> calculateNutrition(@RequestBody Map<String, Object> data) {
+//        try {
+//            Integer foodId = (Integer) data.get("foodId");
+//            Double quantity = ((Number) data.get("quantity")).doubleValue();
+//
+//            if (foodId == null || quantity == null || quantity <= 0) {
+//                return Result.error("食品ID和数量不能为空且必须大于0");
+//            }
+//
+//            Map<String, Object> nutrition = nutritionAnalysisService.calculateNutrition(foodId, quantity);
+//            return Result.success(nutrition);
+//        } catch (Exception e) {
+//            return Result.error("计算营养价值失败：" + e.getMessage());
+//        }
+//    }
+//
+//    /**
+//     * 获取食物搭配建议
+//     */
+//    @PostMapping("/food-suggestions")
+//    public Result<List<String>> getFoodCombinationSuggestions(@RequestBody Map<String, Object> data) {
+//        try {
+//            @SuppressWarnings("unchecked")
+//            List<Integer> foodIds = (List<Integer>) data.get("foodIds");
+//
+//            if (foodIds == null || foodIds.isEmpty()) {
+//                return Result.error("食品列表不能为空");
+//            }
+//
+//            List<String> suggestions = nutritionAnalysisService.getFoodCombinationSuggestions(foodIds);
+//            return Result.success(suggestions);
+//        } catch (Exception e) {
+//            return Result.error("获取搭配建议失败：" + e.getMessage());
+//        }
+//    }
 }
