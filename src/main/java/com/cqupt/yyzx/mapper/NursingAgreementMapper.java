@@ -66,4 +66,8 @@ public interface NursingAgreementMapper {
      * 获取护理协议统计信息
      */
     List<java.util.Map<String, Object>> getAgreementStats();
+
+    List<NursingAgreement> selectAllAgreements();
+
+    List<NursingAgreement> selectAgreementsByPage(int offset, int limit);
 }

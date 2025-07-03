@@ -189,15 +189,15 @@
             </div>
 
             <div id="nursing-project" class="tab-content">
-              <h2 class="section-title">护理项目功能开发中...</h2>
+              <NursingProject/>
             </div>
 
             <div id="nursing-needs" class="tab-content">
-              <h2 class="section-title">客户护理需求功能开发中...</h2>
+              <customer-care-settings/>
             </div>
 
             <div id="nursing-records" class="tab-content">
-              <h2 class="section-title">护理记录功能开发中...</h2>
+              <nursing-records/>
             </div>
 
             <div id="service-assignment" class="tab-content">
@@ -229,6 +229,10 @@ import CustomerCheckout from "@/components/CustomerCheckout.vue";
 import CustomerOuting from "@/components/CustomerOuting.vue";
 import UserManagement from "@/components/UserManagement.vue";
 import NursingLevel from "@/components/NursingLevel.vue";
+import NursingProject from "@/components/NursingProject.vue";
+import Nursingrecords from "@/components/NursingRecords.vue";
+import CustomerCareSettings from "@/components/CustomerCareSettings.vue";
+import NursingRecords from "@/components/NursingRecords.vue";
 
 // 组合式API设置
 const router = useRouter()

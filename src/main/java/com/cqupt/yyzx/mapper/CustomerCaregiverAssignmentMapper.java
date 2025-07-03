@@ -82,4 +82,6 @@ public interface CustomerCaregiverAssignmentMapper {
      */
     List<CustomerCaregiverAssignment> selectAssignmentHistory(@Param("customerId") Integer customerId,
                                                               @Param("limit") Integer limit);
+
+    List<CustomerCaregiverAssignment> selectAllAssignments();
 }

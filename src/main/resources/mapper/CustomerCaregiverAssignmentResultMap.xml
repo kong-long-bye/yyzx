@@ -17,7 +17,18 @@
         <result property="customerName" column="customer_name"/>
         <result property="caregiverName" column="caregiver_name"/>
     </resultMap>
-
+    <!-- 查询所有护理人员分配 -->
+    <select id="selectAllAssignments" resultMap="CustomerCaregiverAssignmentResultMap">
+        SELECT
+            cca.*,
+            c.name as customer_name,
+            u.real_name as caregiver_name
+        FROM customer_caregiver_assignments cca
+                 JOIN customers c ON cca.customer_id = c.id
+                 JOIN users u ON cca.caregiver_id = u.id
+        WHERE cca.status = 1
+        ORDER BY cca.primary_caregiver DESC, cca.assignment_date DESC
+    </select>
     <!-- 根据客户ID查询护理人员分配 -->
     <select id="selectAssignmentsByCustomerId" resultMap="CustomerCaregiverAssignmentResultMap">
         SELECT

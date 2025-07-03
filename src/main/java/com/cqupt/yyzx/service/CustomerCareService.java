@@ -335,4 +335,8 @@ public class CustomerCareService {
 
         return config;
     }
+
+    public List<CustomerCaregiverAssignment> getAllAssignments() {
+        return assignmentMapper.selectAllAssignments();
+    }
 }

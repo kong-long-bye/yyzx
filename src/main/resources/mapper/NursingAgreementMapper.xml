@@ -16,7 +16,17 @@
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
-
+    <!-- 分页查询 -->
+    <select id="selectAgreementsByPage" resultMap="NursingAgreementResultMap" parameterType="java.util.Map">
+        SELECT * FROM nursing_agreements
+        ORDER BY start_date DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+    <!--查询所有护理协议-->
+    <select id="selectAllAgreements" resultMap="NursingAgreementResultMap">
+        SELECT * FROM nursing_agreements
+        ORDER BY start_date DESC
+    </select>
     <!-- 根据客户ID查询有效的护理协议 -->
     <select id="selectActiveAgreementByCustomerId" resultMap="NursingAgreementResultMap">
         SELECT * FROM nursing_agreements

@@ -2,6 +2,9 @@
 export * from './customer'
 export * from './role'
 export * from './nursingLevel'
+export * from './ursingProject.ts'
+export * from './customerCare.ts'
+export * from './nursingRecord'
 export interface ApiResponse<T = any> {
     code: number
     msg: string

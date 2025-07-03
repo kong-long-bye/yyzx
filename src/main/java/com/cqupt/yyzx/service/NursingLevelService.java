@@ -369,4 +369,14 @@ public class NursingLevelService {
             throw new RuntimeException("批量更新状态失败：" + e.getMessage());
         }
     }
+
+    public List<NursingAgreement> getAllAgreements() {
+        try {
+            return agreementMapper.selectAllAgreements();
+        } catch (Exception e) {
+            throw new RuntimeException("获取所有护理协议失败：" + e.getMessage());
+        }
+    }
 }
+
+

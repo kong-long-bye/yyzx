@@ -21,6 +21,19 @@ public class CustomerCareController {
     private CustomerCareService careService;
 
     /**
+     * 查询所有护理人员分配
+     */
+    @GetMapping("/assignments/all")
+    public Result<List<CustomerCaregiverAssignment>> getAllAssignments() {
+        try {
+            List<CustomerCaregiverAssignment> assignments = careService.getAllAssignments();
+            return Result.success(assignments);
+        } catch (Exception e) {
+            return Result.error("查询所有护理分配失败：" + e.getMessage());
+        }
+    }
+
+    /**
      * 根据客户ID查询护理人员分配
      */
     @GetMapping("/customer/{customerId}/assignments")

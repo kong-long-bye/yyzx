@@ -46,20 +46,59 @@ export const nursingLevelApi = {
     },
 
     // 分页查询护理协议列表
-    getAgreementList: (params: AgreementQueryParams): Promise<ApiResponse<AgreementListResponse>> => {
-        const queryString = new URLSearchParams()
+    // 获取协议列表 - 适配后端无分页接口
+    getAgreementList: (params: AgreementQueryParams): Promise<ApiResponse<any>> => {
+        // 调用后端的 /list 接口（无分页）
+        return request<NursingAgreement[]>('/level/list')
+            .then(response => {
+                if (response.code === 200) {
+                    const allData = response.data || []
 
-        if (params.searchKeyword) queryString.append('searchKeyword', params.searchKeyword)
-        if (params.levelStatus) queryString.append('levelStatus', params.levelStatus)
-        if (params.levelCode) queryString.append('levelCode', params.levelCode)
-        if (params.customerId) queryString.append('customerId', params.customerId.toString())
-        if (params.startDate) queryString.append('startDate', params.startDate)
-        if (params.endDate) queryString.append('endDate', params.endDate)
-        if (params.page) queryString.append('page', params.page.toString())
-        if (params.size) queryString.append('size', params.size.toString())
+                    // 前端实现分页逻辑
+                    const page = params.page || 1
+                    const size = params.size || 10
+                    const startIndex = (page - 1) * size
+                    const endIndex = startIndex + size
 
-        const url = `/level/list${queryString.toString() ? '?' + queryString.toString() : ''}`
-        return request<AgreementListResponse>(url)
+                    // 前端实现搜索过滤
+                    let filteredData = allData
+                    if (params.searchKeyword) {
+                        filteredData = allData.filter(item =>
+                            item.customerName?.includes(params.searchKeyword!) ||
+                            item.levelName?.includes(params.searchKeyword!)
+                        )
+                    }
+                    if (params.levelStatus) {
+                        filteredData = filteredData.filter(item =>
+                            item.levelStatus === params.levelStatus
+                        )
+                    }
+                    if (params.levelCode) {
+                        filteredData = filteredData.filter(item =>
+                            item.levelCode === params.levelCode
+                        )
+                    }
+
+                    // 分页处理
+                    const pagedData = filteredData.slice(startIndex, endIndex)
+                    const total = filteredData.length
+                    const totalPages = Math.ceil(total / size)
+
+                    // 返回分页格式的数据
+                    return {
+                        code: 200,
+                        msg: '获取成功',
+                        data: {
+                            agreements: pagedData,
+                            total: total,
+                            page: page,
+                            size: size,
+                            totalPages: totalPages
+                        }
+                    }
+                }
+                return response
+            })
     },
 
     // 根据客户ID查询有效的护理协议

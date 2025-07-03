@@ -24,6 +24,18 @@ public class NursingLevelController {
     private NursingLevelService levelService;
 
     /**
+     * 查询所有护理协议
+     */
+    @GetMapping("/list")
+    public Result<List<NursingAgreement>> getAllAgreements() {
+        try {
+            List<NursingAgreement> agreements = levelService.getAllAgreements();
+            return Result.success(agreements);
+        } catch (Exception e) {
+            return Result.error("查询护理协议失败：" + e.getMessage());
+        }
+    }
+    /**
      * 获取护理等级选项
      */
     @GetMapping("/options")
