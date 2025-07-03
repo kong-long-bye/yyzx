@@ -185,7 +185,7 @@
             </div>
 
             <div id="nursing-level" class="tab-content">
-              <h2 class="section-title">护理级别功能开发中...</h2>
+              <NursingLevel/>
             </div>
 
             <div id="nursing-project" class="tab-content">
@@ -228,6 +228,8 @@ import CustomerCheckin from "@/components/CustomerCheckin.vue";
 import CustomerCheckout from "@/components/CustomerCheckout.vue";
 import CustomerOuting from "@/components/CustomerOuting.vue";
 import UserManagement from "@/components/UserManagement.vue";
+import NursingLevel from "@/components/NursingLevel.vue";
+
 // 组合式API设置
 const router = useRouter()
 const route = useRoute()

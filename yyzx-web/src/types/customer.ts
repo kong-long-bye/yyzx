@@ -27,14 +27,6 @@ export interface Customer {
     primaryCaregiver?: string
 }
 
-// 护理协议接口
-export interface NursingAgreement {
-    levelName: string
-    levelCode: string
-    monthlyFee: number
-    serviceContent?: string
-    startDate?: string
-}
 
 // 外出记录接口
 export interface OutingRecord {
